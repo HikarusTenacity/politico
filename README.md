@@ -39,7 +39,7 @@ animations (oh boy)
 - [ ] dice rolling
 - [ ] player animator
 board stuff
-- [ ] board data, layout, queries 
+- [X] board data, layout, queries 
 config 
 - [ ] camera
 - [ ] rendering

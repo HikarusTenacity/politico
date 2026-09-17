@@ -1,4 +1,4 @@
-const GAME_RENDER_CONFIG = {
+export const GAME_RENDER_CONFIG = {
     pixelationScale: 2,
     rendererOptions: {
         antialias: false,

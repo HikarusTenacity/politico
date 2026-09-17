@@ -1,15 +1,27 @@
-// Get space by ID (0-39)
-function getSpaceById(spaceId: number) {
-    if (spaceId >= 0 && spaceId < BOARD_SPACES.length) {
-        return BOARD_SPACES[spaceId];
-    }
-    return null;
+import { BOARD_SPACES } from './board-layout';
+import { BoardSpace, BoardBounds, SpaceType } from '../types/board-types';
+
+/**
+ * Gets board space by id, returns null if invalid id
+ * @param spaceId
+ * @returns BoardSpace | null
+ */
+export function getSpaceById(spaceId: number): BoardSpace | null {
+    return (spaceId >= 0 && spaceId < BOARD_SPACES.length)
+        ? BOARD_SPACES[spaceId] :
+        null;
 }
 
-// Get space ID from world coordinates
-function getSpaceIdFromCoordinates(worldX: number, worldZ: number) {
-    for (let id = 0; id < 40; id++) {
-        let bounds = SPACE_BOUNDS[id];
+/**
+ * Gets id of board space from world coordinates, returns null if coordinates aren't on the board
+ * @param worldX
+ * @param worldZ
+ * @returns spaceId | null
+ */
+function getSpaceIdFromCoordinates(worldX: number, worldZ: number): number | null {
+    for (let id = 0; id < BOARD_SPACES.length; id++) {
+        const space = BOARD_SPACES[id];
+        const bounds = space.bounds;
         if (worldX >= bounds.xMin && worldX < bounds.xMax &&
             worldZ >= bounds.zMin && worldZ < bounds.zMax) {
             return id;
@@ -18,38 +30,62 @@ function getSpaceIdFromCoordinates(worldX: number, worldZ: number) {
     return null;
 }
 
-// Get space bounds by ID
-function getSpaceBounds(spaceId: number) {
-    return spaceId >= 0 && spaceId < 40 ? SPACE_BOUNDS[spaceId] : null;
+/**
+ * Gets bounds of board space by id, return null if invalid id
+ * @param spaceId
+ */
+export function getSpaceBounds(spaceId: number): BoardBounds | null {
+    const space = getSpaceById(spaceId);
+    return space?.bounds ?? null;
 }
 
-// Get/set space names
-function getSpaceName(spaceId: number) {
+/**
+ * Gets name of board space by id, return null if invalid id
+ * @param spaceId
+ */
+export function getSpaceName(spaceId: number): string | null {
     let space = getSpaceById(spaceId);
-    return space ? space.name : null;
+    return space?.name ?? null;
 }
 
-function getSpaceType(spaceId: number) {
+/**
+ * Gets type of board space by id, return null if invalid id
+ * @param spaceId
+ */
+export function getSpaceType(spaceId: number): SpaceType | null {
     let space = getSpaceById(spaceId);
-    return space ? space.type : null;
+    return space?.type ?? null;
 }
 
-function setSpaceName(spaceId: number, name: string) {
-    let space = getSpaceById(spaceId);
+/**
+ * Sets name of board space by id
+ * @param spaceId
+ * @param name
+ */
+export function setSpaceName(spaceId: number, name: string): void {
+    const space = getSpaceById(spaceId);
     if (space) space.name = name;
 }
 
-function getSpacesByType(type: string) {
-    let matching = [];
-    for (let i = 0; i < BOARD_SPACES.length; i++) {
-        if (BOARD_SPACES[i].type === type) {
-            matching.push(BOARD_SPACES[i]);
+/**
+ * Gets all board spaces of a specific type
+ * @param type
+ */
+export function getSpacesByType(type: string): BoardSpace[] {
+    let matching: BoardSpace[] = [];
+    for (const element of BOARD_SPACES) {
+        if (element.type === type) {
+            matching.push(element);
         }
     }
     return matching;
 }
 
-// Check if coordinates are on the board
-function isOnMonopolyBoard(worldX: number, worldZ: number) {
+/**
+ * Checks if the given world coordinates are on the board
+ * @param worldX
+ * @param worldZ
+ */
+export function isOnBoard(worldX: number, worldZ: number): boolean {
     return getSpaceIdFromCoordinates(worldX, worldZ) !== null;
 }

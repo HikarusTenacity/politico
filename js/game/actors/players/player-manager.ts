@@ -8,7 +8,7 @@ const MAX_PLAYER_BUFF_SLOTS = 99;
 // Player colors
 const PLAYER_COLORS = [0xFF0000, 0x008000, 0x0000FF, 0xFFFF00];  // Red, Green, Blue, Yellow
 
-function initializePlayers() {
+export function initializePlayers() {
     PLAYERS = [];
     PLAYER_PIECES = {};
 

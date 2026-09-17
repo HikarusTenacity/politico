@@ -3,7 +3,7 @@
  * @param spaceId The ID of the space.
  * @returns An array of pieces at the space.
  */
-function getPiecesAtSpace(spaceId: number) {
+export function getPiecesAtSpace(spaceId: number) {
     let pieces = [];
     for (const element of PLAYERS) {
         if (element.currentSpace === spaceId && element.piece) {
@@ -22,7 +22,7 @@ function getPiecesAtSpace(spaceId: number) {
  * @param playerId The ID of the space.
  * @returns The player with the specified ID, or null if not found.
  */
-function getPlayerById(playerId: number) {
+export function getPlayerById(playerId: number) {
     if (playerId >= 0 && playerId < PLAYERS.length) {
         return PLAYERS[playerId];
     }
