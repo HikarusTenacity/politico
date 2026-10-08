@@ -1,0 +1,12 @@
+@media (max-width: 800px) {
+    .name-overlay {
+        min-width: 0;
+        width: calc(100% - 24px);
+    }
+
+    .name-key {
+        width: 24px;
+        font-size: 14px;
+    }
+}
+

@@ -1,0 +1,259 @@
+.name-overlay {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    height: 85vh;
+    max-width: 1400px;
+    max-height: 900px;
+    padding: 40px 50px;
+    background: #7B4A20;
+    border: 8px solid #4A2511;
+    border-radius: 0;
+    box-shadow:
+            inset 4px 4px 0 rgba(255, 255, 255, 0.1),
+            inset -4px -4px 0 rgba(0, 0, 0, 0.35),
+            10px 10px 0 #5A3316,
+            20px 20px 0 rgba(0, 0, 0, 0.4);
+    color: #FFF8DC;
+    font-family: var(--ui-font);
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    z-index: 25;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.name-overlay.hidden {
+    display: none;
+}
+
+.name-title {
+    font-size: 40px;
+    font-weight: bold;
+    letter-spacing: 0;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #FFE4B5;
+    font-family: var(--ui-font);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    text-shadow:
+            2px 2px 0 #000,
+            4px 4px 0 #4A2511;
+}
+
+.name-slots {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.name-slot {
+    width: 70px;
+    height: 80px;
+    line-height: 80px;
+    text-align: center;
+    font-size: 44px;
+    font-weight: bold;
+    font-family: var(--ui-font);
+    font-weight: 900;
+    letter-spacing: 0;
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    border: 5px solid #654321;
+    border-radius: 8px;
+    background: #C46B1F;
+    color: #FFF8DC;
+    pointer-events: auto;
+    cursor: pointer;
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            4px 4px 0 #4A2511;
+    transition: transform 0.1s ease;
+}
+
+.name-slot:hover {
+    transform: translateY(-3px);
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            6px 6px 0 #4A2511;
+}
+
+.name-slot.active {
+    border-color: #FFD700;
+    background: #D4A017;
+    color: #FFFAF0;
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.18),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.22),
+            4px 4px 0 #B8860B;
+}
+
+.name-keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.name-keyboard {
+    pointer-events: auto;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: max-content;
+    max-width: 100%;
+    gap: 18px;
+    justify-content: center;
+    margin-left: auto;
+    margin-right: auto;
+    align-self: center;
+}
+
+.name-keyboard-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.name-key {
+    width: 72px;
+    height: 70px;
+    line-height: 70px;
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+    font-family: var(--ui-font);
+    font-weight: 900;
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    border: 5px solid #654321;
+    border-radius: 8px;
+    background: #A86B2A;
+    color: #FFF8DC;
+    cursor: pointer;
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            4px 4px 0 #4A2511;
+    text-shadow: 2px 2px 0 #000;
+    user-select: none;
+}
+
+.name-key:active {
+    transform: translateY(2px);
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            2px 2px 0 #4A2511;
+}
+
+.name-keyboard-delete-column {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+}
+
+.name-key-delete {
+    width: 168px;
+    height: 112px;
+    line-height: 112px;
+    font-size: 38px;
+    letter-spacing: 2px;
+    border-width: 6px;
+    border-radius: 10px;
+    background: #B02A1A;
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            5px 5px 0 #4A2511;
+}
+
+.name-key-delete:active {
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            2px 2px 0 #4A2511;
+}
+
+.name-message {
+    min-height: 30px;
+    margin-top: 15px;
+    text-align: center;
+    font-size: 16px;
+    color: #FF6B6B;
+    font-family: var(--ui-font);
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 0 #000;
+}
+
+.name-controls {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 14px;
+    color: #FFE4B5;
+    font-family: var(--ui-font);
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 0 #000;
+}
+
+.name-confirm {
+    display: block;
+    margin: 25px auto 0;
+    padding: 20px 50px;
+    border: 6px solid #654321;
+    border-radius: 10px;
+    background: #2E8B57;
+    color: #FFF8DC;
+    font-family: var(--ui-font);
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-shadow: 2px 2px 0 #000;
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            5px 5px 0 #4A2511;
+    transition: all 0.1s ease;
+}
+
+.name-confirm:hover {
+    transform: translateY(-4px);
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            7px 7px 0 #4A2511;
+}
+
+.name-confirm:active {
+    transform: translateY(2px);
+    box-shadow:
+            inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+            inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+            2px 2px 0 #4A2511;
+}
+

@@ -1,0 +1,83 @@
+body[data-game-theme] #info {
+    background: var(--theme-info-bg);
+    color: var(--theme-info-text);
+    border-color: var(--theme-info-border);
+}
+
+body[data-game-theme] #turnDisplay {
+    color: var(--theme-panel-text);
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.75);
+}
+
+body[data-game-theme] .title-screen-overlay {
+    background: var(--theme-title-screen-bg);
+    color: var(--theme-title-screen-text);
+}
+
+body[data-game-theme] .title-screen-logo {
+    text-shadow: var(--theme-title-logo-shadow);
+}
+
+body[data-game-theme] .title-rules-modal,
+body[data-game-theme] .credits-panel,
+body[data-game-theme] .settings-panel,
+body[data-game-theme] .player-corner,
+body[data-game-theme] .name-overlay {
+    background: var(--theme-panel-bg);
+    border-color: var(--theme-panel-border);
+    color: var(--theme-panel-text);
+    box-shadow: var(--theme-panel-shadow);
+}
+
+body[data-game-theme] .title-rules-title,
+body[data-game-theme] .title-rules-text,
+body[data-game-theme] .credits-title,
+body[data-game-theme] .credits-line,
+body[data-game-theme] .settings-title,
+body[data-game-theme] .settings-label,
+body[data-game-theme] .settings-value-label,
+body[data-game-theme] .toggle-label,
+body[data-game-theme] .player-corner-name {
+    color: var(--theme-panel-text);
+}
+
+body[data-game-theme] .title-screen-start,
+body[data-game-theme] .title-rules-close,
+body[data-game-theme] .credits-close-btn,
+body[data-game-theme] .settings-button,
+body[data-game-theme] .settings-option-btn {
+    color: var(--theme-button-text);
+    border-color: var(--theme-button-border);
+    box-shadow: var(--theme-button-shadow);
+}
+
+body[data-game-theme] .title-screen-start {
+    background: var(--theme-title-start-bg);
+    border-color: var(--theme-title-start-border);
+}
+
+body[data-game-theme] .title-screen-start + .title-screen-start {
+    background: var(--theme-title-settings-bg);
+    border-color: var(--theme-title-settings-border);
+}
+
+body[data-game-theme] .title-screen-start + .title-screen-start + .title-screen-start {
+    background: var(--theme-title-credits-bg);
+    border-color: var(--theme-title-credits-border);
+}
+
+body[data-game-theme] .settings-button.settings-reset-btn {
+    background: linear-gradient(180deg, #dc3545, #b82835);
+    border-color: #7a1f2b;
+}
+
+body[data-game-theme] .settings-button.settings-apply-btn {
+    background: linear-gradient(180deg, #28a745, #1f7e34);
+    border-color: #165023;
+}
+
+body[data-game-theme] .settings-option-btn.selected {
+    background: var(--theme-button-selected-bg);
+    border-color: var(--theme-button-selected-border);
+    color: var(--theme-button-selected-text);
+}

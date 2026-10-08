@@ -1,0 +1,21 @@
+export const creditsLines: string[] = [
+    'POLITICO!',
+    '',
+    'Created by',
+    'Hayden Honjo, Anderson Huang, Simar Pabla, Sophia Notario, and Mackenzie Seago',
+    'Engine',
+    'Three.js',
+    'Core Systems',
+    'Hayden, Anderson, Kenzie',
+    'Character Design & Art',
+    'Simar and Sophia',
+    '3D Models, UI',
+    'Hayden',
+    'Music/SFX',
+    'Hayden',
+    'Special Thanks',
+    'Dr. Royaltey',
+    '',
+    '',
+    'Thanks for playing!'
+];
