@@ -64,7 +64,8 @@ export function createTreeRing(scene: THREE.Scene): THREE.Group[] {
     const treeRingConfig = treeConfig.ring;
     for (let i = 0; i < treeRingConfig.count; i++) {
         const angle = (i / treeRingConfig.count) * Math.PI * 2;
-        const radius = treeRingConfig.minRadius + Math.random() * (treeRingConfig.maxRadius - treeRingConfig.minRadius);
+        const radius = treeRingConfig.minRadius + Math.random() * //NOSONAR
+            (treeRingConfig.maxRadius - treeRingConfig.minRadius);
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
 
@@ -75,7 +76,8 @@ export function createTreeRing(scene: THREE.Scene): THREE.Group[] {
             radius
         );
         const sizeCurve = distFromCenter ** 2;
-        const scale = 1 + sizeCurve + Math.random() * treeConfig.ring.scaleRandomRange;
+        const scale = 1 + sizeCurve + Math.random() * //NOSONAR
+            treeConfig.ring.scaleRandomRange;
         const tree: THREE.Group = createTree(x, z, scale);
         scene.add(tree);
         trees.push(tree);

@@ -11,3 +11,9 @@ export interface EnvironmentTheme {
     boardSpaceColor: number;
     boardGridColor: number;
 }
+
+export interface SkyThemeColors {
+    skyColor: number;
+    fogColor: number;
+    sunColor: number;
+}

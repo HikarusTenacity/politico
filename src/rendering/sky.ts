@@ -1,40 +1,80 @@
 import * as THREE from 'three';
-import { cloudEffectsEnabled, skyQuality, skyColor, fogColor, cloudSpeedMultiplier, skyThemeColors } from "../constants/environment-parameters";
+import {
+    CLOUD_EFFECTS_ENABLED,
+    SKY_QUALITY,
+    CLOUD_SPEED_MULTIPLIER,
+    FOG_END_DISTANCE,
+    FOG_START_DISTANCE
+} from '../constants/environment-parameters';
+import { getGameTheme } from '../game/themes/game-theme';
+import { SkyQuality, SkyThemeColors } from '../types/environment-types';
+import { generateCloud, updateCloudPosition } from '../game/models/cloud';
+import { SUN } from '../constants/rendering-parameters';
 
+let cloudsToUpdate: THREE.Group[] = [];
+let skyScene: THREE.Scene | null = null;
+let sunMesh: THREE.Mesh | null = null;
+let haloMesh: THREE.Mesh | null = null;
 
-const cloudsToUpdate: THREE.Mesh[] = [];
-const skyScene: THREE.Scene = null;
-const sunMesh: THREE.Mesh = null;
-const haloMesh: THREE.Mesh = null;
+let skyThemeColors: SkyThemeColors = getGameTheme().visuals.sky;
+let cloudEffectsEnabled = CLOUD_EFFECTS_ENABLED;
+let skyQuality: SkyQuality = SKY_QUALITY;
+let cloudSpeedMultiplier = CLOUD_SPEED_MULTIPLIER;
 
-function setupSky(scene: THREE.Scene, directionalLight: THREE.DirectionalLight) {
-    if (typeof getGameTheme === 'function') {
-        skyThemeColors = getGameTheme().visuals.sky;
+export function setCloudTheme(themeColor: number): void {
+    for (const cloud of cloudsToUpdate) {
+        cloud.traverse((node: THREE.Object3D): void => {
+            if (!(node instanceof THREE.Mesh)) return;
+
+            const material = node.material;
+
+            if (material instanceof THREE.MeshPhongMaterial) {
+                material.color.setHex(themeColor);
+            }
+        });
     }
+}
+
+export function setupSky(
+    scene: THREE.Scene,
+    directionalLight: THREE.DirectionalLight
+): void {
+    skyScene = scene;
+    skyThemeColors = getGameTheme().visuals.sky;
 
     const sunColor = skyThemeColors.sunColor;
-    skyScene = scene;
 
-    const sunGeometry = new THREE.SphereGeometry(3, 16, 16);
-    const sunMaterial = new THREE.MeshBasicMaterial({color: sunColor, flatShading: true});
+    const sunGeometry = new THREE.SphereGeometry(
+        SUN.radius,
+        SUN.segments,
+        SUN.segments
+    );
+    const sunMaterial = new THREE.MeshBasicMaterial({
+        color: sunColor
+    });
+
     sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
     sunMesh.position.copy(directionalLight.position);
     scene.add(sunMesh);
 
-    // Glow halo around sun
-    const haloGeometry = new THREE.SphereGeometry(8, 32, 32);
+    const haloGeometry = new THREE.SphereGeometry(
+        SUN.haloRadius,
+        SUN.haloSegments,
+        SUN.haloSegments
+    );
     const haloMaterial = new THREE.MeshBasicMaterial({
         color: sunColor,
-        transparent: true,
-        opacity: 0.15,
+        transparent: SUN.haloIsTransparent,
+        opacity: SUN.haloOpacity,
         side: THREE.BackSide
     });
+
     haloMesh = new THREE.Mesh(haloGeometry, haloMaterial);
     haloMesh.position.copy(directionalLight.position);
     scene.add(haloMesh);
-    
-    //generate clouds
+
     cloudsToUpdate = [];
+
     for (let i = 0; i < 80; i++) {
         const cloud = generateCloud();
         scene.add(cloud);
@@ -44,26 +84,34 @@ function setupSky(scene: THREE.Scene, directionalLight: THREE.DirectionalLight) 
     applySkyQuality();
 }
 
-function updateClouds() {
+export function updateClouds(): void {
     if (!cloudEffectsEnabled || skyQuality !== 'high') return;
-    for (const c of cloudsToUpdate) updateCloudPosition(c);
+
+    for (const cloud of cloudsToUpdate) {
+        updateCloudPosition(cloud, cloudSpeedMultiplier);
+    }
 }
 
-function setCloudEffectsEnabled(enabled: boolean) {
+export function setCloudEffectsEnabled(enabled: boolean): void {
     cloudEffectsEnabled = enabled;
     applySkyQuality();
 }
 
-function setCloudSpeedMultiplier(multiplier: number) {
-    cloudSpeedMultiplier = Math.max(0, multiplier || 1);
+export function setCloudSpeedMultiplier(multiplier: number): void {
+    if (!Number.isFinite(multiplier)) {
+        cloudSpeedMultiplier = CLOUD_SPEED_MULTIPLIER;
+        return;
+    }
+
+    cloudSpeedMultiplier = Math.max(0, multiplier);
 }
 
-function setSkyQuality(quality: SkyQuality = 'high') {
+export function setSkyQuality(quality: SkyQuality = 'high'): void {
     skyQuality = quality;
     applySkyQuality();
 }
 
-function applySkyQuality() {
+function applySkyQuality(): void {
     const showBackground = skyQuality !== 'low';
     const showClouds = skyQuality === 'high';
     const cloudsVisible = showClouds && cloudEffectsEnabled;
@@ -72,13 +120,17 @@ function applySkyQuality() {
     if (haloMesh) haloMesh.visible = showBackground;
 
     if (skyScene) {
-        if (showBackground) {
-            skyScene.background = new THREE.Color(skyThemeColors.skyColor);
-            skyScene.fog = new THREE.Fog(skyThemeColors.fogColor, 5, 100);
-        } else {
-            skyScene.background = null;
-            skyScene.fog = null;
-        }
+        skyScene.background = showBackground
+            ? new THREE.Color(skyThemeColors.skyColor)
+            : null;
+
+        skyScene.fog = showBackground
+            ? new THREE.Fog(
+                skyThemeColors.fogColor,
+                FOG_START_DISTANCE,
+                FOG_END_DISTANCE
+            )
+            : null;
     }
 
     for (const cloud of cloudsToUpdate) {
@@ -86,19 +138,23 @@ function applySkyQuality() {
     }
 }
 
-function setSkyTheme(themeColors: { skyColor: number; fogColor: number; sunColor: number; }) {
+export function setSkyTheme(themeColors: SkyThemeColors): void {
     skyThemeColors = themeColors;
 
     if (skyScene) {
         skyScene.background = new THREE.Color(themeColors.skyColor);
-        skyScene.fog = new THREE.Fog(themeColors.fogColor, 5, 100);
+        skyScene.fog = new THREE.Fog(
+            themeColors.fogColor,
+            FOG_START_DISTANCE,
+            FOG_END_DISTANCE
+        );
     }
 
-    if (sunMesh) {
-        (sunMesh.material as THREE.MeshBasicMaterial).color.setHex(themeColors.sunColor);
+    if (sunMesh?.material instanceof THREE.MeshBasicMaterial) {
+        sunMesh.material.color.setHex(themeColors.sunColor);
     }
 
-    if (haloMesh) {
-        (haloMesh.material as THREE.MeshBasicMaterial).color.setHex(themeColors.sunColor);
+    if (haloMesh?.material instanceof THREE.MeshBasicMaterial) {
+        haloMesh.material.color.setHex(themeColors.sunColor);
     }
 }

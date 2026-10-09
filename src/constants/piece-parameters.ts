@@ -1,7 +1,7 @@
 import {PieceConfig} from "../types/piece-types";
 
 
-export const pieceConfigs: PieceConfig[] =
+export const PIECE_CONFIGS: PieceConfig[] =
     [{
         color: "red",
         x:     -4,

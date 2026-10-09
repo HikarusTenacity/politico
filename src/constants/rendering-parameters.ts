@@ -90,8 +90,21 @@ export const TREE = {
         count: 150,
         scaleRandomRange: 0.25,
     },
-    SWAY_Z_SPEED_RATIO: 0.85,
-    SWAY_Z_AMP_RATIO: 0.75
+    sway: {
+        zSpeedRatio: 0.85,
+        zAmplitudeRatio: 0.75,
+        amplitudeBase: 0.012,
+        amplitudeRange: 0.003,
+        speedBase: 0.75,
+        speedRange: 0.45,
+        defaults: {
+            phase: 0,
+            amplitude: 0.015,
+            speed: 0.9,
+            baseRotationX: 0,
+            baseRotationZ: 0
+        }
+    }
 }
 
 export const DICE = {
@@ -125,7 +138,7 @@ export interface BoxSegmentConfig {
     rotationZ?: number;
 }
 export function createSymbolMeshGroup(
-    segmentConfigs: BoxSegmentConfig[],
+    segmentConfigs: BoxSegmentConfig[]
 ): THREE.Group {
     const symbolGroup = new THREE.Group();
     symbolGroup.name = 'factionSymbol';
@@ -293,4 +306,47 @@ export const SC = {
         rightY: 0.11,
         rightZ: 0
     }
+}
+export const GROUND = {
+    width: 225,
+    length: 225,
+    boardWidth: 20,
+    boardHeight: 20,
+    usesFlatShading: true,
+    recievesShadow: true,
+    rotationX: -Math.PI / 2,
+    rotationY: -1.01,
+    positionY: -1
+};
+
+export const DIRECTIONAL_LIGHT_SETTINGS = {
+    intensity: 1.2,
+    x: 30,
+    y: 40,
+    z: 30,
+    castsShadow: true,
+    shadowMapSize: {
+        width: 2048,
+        height: 2048
+    },
+    shadowCamera: {
+        near: 0.5,
+        far: 100,
+        left: -30,
+        right: 30,
+        top: 30,
+        bottom: -30
+    }
+};
+
+export const AMBIENT_LIGHT_INTENSITY: number = 0.6;
+
+export const HEMISPHERE_LIGHT_INTENSITY: number = 0.5;
+export const SUN = {
+    radius: 3,
+    segments: 16,
+    haloRadius: 8,
+    haloSegments: 32,
+    haloIsTransparent: true,
+    haloOpacity: 0.15
 }
