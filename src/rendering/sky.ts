@@ -7,19 +7,24 @@ import {
     FOG_START_DISTANCE
 } from '../constants/environment-parameters';
 import { getGameTheme } from '../game/themes/game-theme';
-import { SkyQuality, SkyThemeColors } from '../types/environment-types';
 import { generateCloud, updateCloudPosition } from '../game/models/cloud';
 import { SUN } from '../constants/rendering-parameters';
+
+import type { SkyQuality, SkyThemeColors } from '../types/environment-types';
 
 let cloudsToUpdate: THREE.Group[] = [];
 let skyScene: THREE.Scene | null = null;
 let sunMesh: THREE.Mesh | null = null;
 let haloMesh: THREE.Mesh | null = null;
 
-let skyThemeColors: SkyThemeColors = getGameTheme().visuals.sky;
-let cloudEffectsEnabled = CLOUD_EFFECTS_ENABLED;
+let skyThemeColors: SkyThemeColors = {
+    skyColor: 0x87ceeb,
+    fogColor: 0x5a7a9e,
+    sunColor: 0xffff00
+};
+let cloudEffectsEnabled: boolean = CLOUD_EFFECTS_ENABLED;
 let skyQuality: SkyQuality = SKY_QUALITY;
-let cloudSpeedMultiplier = CLOUD_SPEED_MULTIPLIER;
+let cloudSpeedMultiplier: number = CLOUD_SPEED_MULTIPLIER;
 
 export function setCloudTheme(themeColor: number): void {
     for (const cloud of cloudsToUpdate) {
@@ -88,7 +93,7 @@ export function updateClouds(): void {
     if (!cloudEffectsEnabled || skyQuality !== 'high') return;
 
     for (const cloud of cloudsToUpdate) {
-        updateCloudPosition(cloud, cloudSpeedMultiplier);
+        updateCloudPosition(cloud);
     }
 }
 

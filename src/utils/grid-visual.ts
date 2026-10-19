@@ -1,7 +1,12 @@
+import * as THREE from 'three';
+import { getSpaceBounds } from '../game/board/board-queries';
+import {CORNER_SIZE, PROPERTY_SIZE} from "../constants/board-parameters";
+
+
 let playableSpaceMaterial: THREE.MeshBasicMaterial | null = null;
 let boardLineMaterial: THREE.LineBasicMaterial | null = null;
 
-function createPlayableSpacesVisualization(scene: any) {
+export function createPlayableSpacesVisualization(scene: THREE.Scene) {
     const spacesGroup = new THREE.Group();
     
     const boardY = -0.98;
@@ -38,7 +43,7 @@ function createPlayableSpacesVisualization(scene: any) {
 }
 
 // create board lines
-function createBoardGridVisualization(scene: any) {
+export function createBoardGridVisualization(scene: THREE.Scene) {
     const gridGroup = new THREE.Group();
     const boardY = -0.97;
     
@@ -49,14 +54,30 @@ function createBoardGridVisualization(scene: any) {
     });
     boardLineMaterial = lineMaterial;
     
-    const xCoords = generateCoordinates(-10, CORNER, PROPERTY);
-    const zCoords = generateCoordinates(10, -CORNER, -PROPERTY);
+    const xCoords = generateCoordinates(
+        -10,
+        CORNER_SIZE,
+        PROPERTY_SIZE
+    );
+    const zCoords = generateCoordinates(
+        10,
+        -CORNER_SIZE,
+        -PROPERTY_SIZE
+    );
     
     // vertical
     for (const element of xCoords) {
         const geometry: THREE.BufferGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(element, boardY, -10),
-            new THREE.Vector3(element, boardY, 10)
+            new THREE.Vector3(
+                element,
+                boardY,
+                -10
+            ),
+            new THREE.Vector3(
+                element,
+                boardY,
+                10
+            )
         ]);
         gridGroup.add(new THREE.Line(geometry, lineMaterial));
     }
@@ -64,8 +85,16 @@ function createBoardGridVisualization(scene: any) {
     // horizontal
     for (const element of zCoords) {
         const geometry: THREE.BufferGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(-10, boardY, element),
-            new THREE.Vector3(10, boardY, element)
+            new THREE.Vector3(
+                -10,
+                boardY,
+                element
+            ),
+            new THREE.Vector3(
+                10,
+                boardY,
+                element
+            )
         ]);
         gridGroup.add(new THREE.Line(geometry, lineMaterial));
     }
@@ -74,7 +103,7 @@ function createBoardGridVisualization(scene: any) {
     return gridGroup;
 }
 
-function generateCoordinates(start: number, step1: number, step2: number) {
+function generateCoordinates(start: number, step1: number, step2: number): number[] {
     const coords = [start];
     for (let i = 0; i < 10; i++) {
         start += (i === 0 || i === 9) ? step1 : step2;
@@ -83,11 +112,7 @@ function generateCoordinates(start: number, step1: number, step2: number) {
     return coords;
 }
 
-function setBoardTheme(spaceColor: number, gridColor: number): void {
-    if (playableSpaceMaterial) {
-        playableSpaceMaterial.color.setHex(spaceColor);
-    }
-    if (boardLineMaterial) {
-        boardLineMaterial.color.setHex(gridColor);
-    }
+export function setBoardTheme(spaceColor: number, gridColor: number): void {
+    if (playableSpaceMaterial) playableSpaceMaterial.color.setHex(spaceColor);
+    if (boardLineMaterial) boardLineMaterial.color.setHex(gridColor);
 }

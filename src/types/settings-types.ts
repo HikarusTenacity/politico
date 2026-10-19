@@ -1,3 +1,7 @@
+import type {GameThemeName} from "./theme";
+
+export type GraphicsQuality = 'low' | 'medium' | 'high';
+
 export interface GameSettings {
     masterVolume: number;
     musicVolume: number;
@@ -5,9 +9,9 @@ export interface GameSettings {
     masterMuted: boolean;
     musicMuted: boolean;
     sfxMuted: boolean;
-    graphicsQuality: 'low' | 'medium' | 'high';
+    graphicsQuality: GraphicsQuality;
     gameSpeed: number;
-    theme: string;
+    theme: GameThemeName;
 }
 
 export interface SettingsManager {
@@ -25,8 +29,10 @@ export interface SettingsManager {
     notifyListeners: () => void;
     getVolume: () => number;
     setVolume: (value: number) => void;
-    getGraphicsQuality: () => 'low' | 'medium' | 'high';
-    setGraphicsQuality: (quality: 'low' | 'medium' | 'high') => void;
+    getGraphicsQuality: () => GraphicsQuality;
+    setGraphicsQuality: (quality: GraphicsQuality) => void;
     getGameSpeed: () => number;
     setGameSpeed: (speed: number) => void;
+    getTheme: () => GameThemeName;
+    setTheme: (theme: GameThemeName) => void;
 }

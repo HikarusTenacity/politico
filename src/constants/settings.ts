@@ -1,6 +1,4 @@
-import {GameSettings} from "../types/settings-types";
-
-
+import type {GameSettings} from "../types/settings-types";
 
 export const GAME_SETTINGS_STORAGE_KEY: string = 'politico-settings';
 export const GAME_SETTINGS_CONFIG: GameSettings = {

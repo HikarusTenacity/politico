@@ -1,4 +1,4 @@
-import { TitleScreen } from '../../../types/ui-types';
+import type { TitleScreen } from '../../../types/ui-types';
 
 export function createTitleScreen(): TitleScreen {
     const root = document.createElement('div');
@@ -89,7 +89,7 @@ export function createTitleScreen(): TitleScreen {
             this.rulesModal.classList.add('hidden');
         },
 
-        onStart: function(callback) {
+        onStart: function(callback: () => void) {
             if (typeof callback !== 'function') return;
             var self = this;
 
@@ -112,9 +112,9 @@ export function createTitleScreen(): TitleScreen {
             });
         },
 
-        onButton: function(buttonName, callback) {
-            var self = this;
-            var target = null;
+        onButton: function(buttonName: 'settings' | 'credits' | 'start', callback: () => void) {
+            const self = this;
+            let target = null;
 
             if (buttonName === 'settings') {
                 target = this.settingsButton;

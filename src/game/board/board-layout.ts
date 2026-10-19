@@ -95,8 +95,9 @@ export function initializeBoardSpaces(): void {
     //inplace, clear array (from copilot)
     BOARD_SPACES.length = 0;
     
-    for (let id = 0; id < 40; id++) {
-        const bounds: BoardTypes.BoardBounds = SPACE_BOUNDS[id];
+    const spaceCount = Object.keys(SPACE_DEFINITIONS_BY_ID).length;
+    for (let id = 0; id < spaceCount; id++) {
+        const bounds = SPACE_BOUNDS[id];
         if (!bounds) continue;
 
         const definition: BoardTypes.SpaceDefinition = SPACE_DEFINITIONS_BY_ID[id] || {

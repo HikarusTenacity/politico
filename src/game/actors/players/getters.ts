@@ -1,10 +1,12 @@
+import {PLAYERS} from './player-manager';
+
 /**
  * Gets the pieces at a specific space.
  * @param spaceId The ID of the space.
  * @returns An array of pieces at the space.
  */
 export function getPiecesAtSpace(spaceId: number) {
-    let pieces = [];
+    const pieces: {playerId: number; piece: NonNullable<typeof PLAYERS[number]['piece']>; index: number}[] = [];
     for (const element of PLAYERS) {
         if (element.currentSpace === spaceId && element.piece) {
             pieces.push({

@@ -1,6 +1,12 @@
 // Player movement and animation system
-function createPlayerAnimator(playerPiece, targetSpaceId) {
-    var animator = {
+import * as THREE from "three";
+import {clampValue} from "../../utils/clampValue";
+import {PLAYER_ANIMATOR} from "../../constants/animation-parameters";
+import {getSpaceBounds} from "../board/board-queries";
+import type {MotionProfile, PlayerAnimator} from "../../types/animation-types";
+
+export function createPlayerAnimator(playerPiece: THREE.Group, targetSpaceId: number) {
+    const animator: PlayerAnimator = {
         playerPiece: playerPiece,
         targetSpaceId: targetSpaceId,
         isAnimating: false,
@@ -16,15 +22,23 @@ function createPlayerAnimator(playerPiece, targetSpaceId) {
         bodyBobAmount: 0.06,
         armSwingAmount: 0.4,
 
-        setSpeedMultiplier: function(multiplier) {
-            this.speedMultiplier = Math.max(0.5, Math.min(2.0, multiplier || 1));
+        setSpeedMultiplier: function(multiplier: number): void {
+            this.speedMultiplier = clampValue(
+                multiplier ?? PLAYER_ANIMATOR.fallbackSpeedMultiplier,
+                PLAYER_ANIMATOR.minimumSpeedMultiplier,
+                PLAYER_ANIMATOR.maximumSpeedMultiplier,
+            );
         },
 
-        setWalkDuration: function(durationMs) {
-            this.animationDuration = Math.max(250, durationMs || 2000);
+        setWalkDuration: function(durationMs: number): void {
+            this.animationDuration = clampValue(
+                durationMs ?? PLAYER_ANIMATOR.fallbackDuration,
+                PLAYER_ANIMATOR.minimumDuration,
+                PLAYER_ANIMATOR.maximumDuration,
+            );
         },
 
-        setMotionProfile: function(profile) {
+        setMotionProfile: function(profile: MotionProfile): void {
             if (!profile) {
                 return;
             }
@@ -59,17 +73,23 @@ function createPlayerAnimator(playerPiece, targetSpaceId) {
         
         calculateWalkPath: function() {
             // Get the bounds of the target space
-            var spaceBounds = getSpaceBounds(this.targetSpaceId);
+            const spaceBounds = getSpaceBounds(this.targetSpaceId);
             if (!spaceBounds) {
                 console.log('No space bounds for space', this.targetSpaceId);
                 this.playerWalkPath = [];
-                this.playerTargetPos = this.playerStartPos.clone();
+                if (this.playerStartPos) {
+                    this.playerTargetPos = this.playerStartPos.clone();
+                }
+                return;
+            }
+
+            if (!this.playerStartPos) {
                 return;
             }
             
             // Calculate center of the space
-            var targetX = (spaceBounds.xMin + spaceBounds.xMax) / 2;
-            var targetZ = (spaceBounds.zMin + spaceBounds.zMax) / 2;
+            const targetX = (spaceBounds.xMin + spaceBounds.xMax) / 2;
+            const targetZ = (spaceBounds.zMin + spaceBounds.zMax) / 2;
             this.playerTargetPos = new THREE.Vector3(targetX, this.playerPiece.position.y, targetZ);
             
             console.log('Walking from', this.playerStartPos, 'to', this.playerTargetPos);
@@ -79,13 +99,13 @@ function createPlayerAnimator(playerPiece, targetSpaceId) {
             console.log('Walk path has', this.playerWalkPath.length, 'points');
         },
         
-        createSmoothPath: function(start, end, numPoints) {
-            var path = [start.clone()];
+        createSmoothPath: function(start: THREE.Vector3, end: THREE.Vector3, numPoints: number) {
+            const path = [start.clone()];
             
             // Calculate straight-line distance
-            var dx = end.x - start.x;
-            var dz = end.z - start.z;
-            var distance = Math.sqrt(dx * dx + dz * dz);
+            const dx = end.x - start.x;
+            const dz = end.z - start.z;
+            const distance = Math.hypot(dx, dz);
             
             console.log('Distance to walk:', distance.toFixed(2));
             
@@ -96,10 +116,10 @@ function createPlayerAnimator(playerPiece, targetSpaceId) {
             }
             
             // Create waypoints along a straight path
-            for (var i = 1; i <= numPoints; i++) {
-                var t = i / numPoints;
-                var x = start.x + dx * t;
-                var z = start.z + dz * t;
+            for (let i = 1; i <= numPoints; i++) {
+                const t = i / numPoints;
+                const x = start.x + dx * t;
+                const z = start.z + dz * t;
                 
                 path.push(new THREE.Vector3(x, start.y, z));
             }
@@ -107,11 +127,11 @@ function createPlayerAnimator(playerPiece, targetSpaceId) {
             return path;
         },
         
-        update: function() {
+        update: function(): boolean {
             if (!this.isAnimating) return false;
             
-            var elapsed = (Date.now() - this.animationStartTime) * this.speedMultiplier;
-            var progress = Math.min(elapsed / this.animationDuration, 1);
+            const elapsed = (Date.now() - this.animationStartTime) * this.speedMultiplier;
+            const progress = Math.min(elapsed / this.animationDuration, 1);
             
             if (progress < 1) {
                 this.movePlayerAlongPath(progress);
@@ -123,75 +143,79 @@ function createPlayerAnimator(playerPiece, targetSpaceId) {
             }
         },
         
-        movePlayerAlongPath: function(progress) {
+        movePlayerAlongPath: function(progress: number): void {
             if (this.playerWalkPath.length < 2) {
                 return;
             }
             
             // Calculate position along path based on progress
-            var targetIndex = progress * (this.playerWalkPath.length - 1);
-            var currentIndex = Math.floor(targetIndex);
-            var nextIndex = Math.min(currentIndex + 1, this.playerWalkPath.length - 1);
-            var segmentProgress = targetIndex - currentIndex;
+            const targetIndex = progress * (this.playerWalkPath.length - 1);
+            const currentIndex = Math.floor(targetIndex);
+            const nextIndex = Math.min(currentIndex + 1, this.playerWalkPath.length - 1);
+            const segmentProgress = targetIndex - currentIndex;
             
             // Interpolate between two points on path
-            var currentPoint = this.playerWalkPath[currentIndex];
-            var nextPoint = this.playerWalkPath[nextIndex];
-            
-            var newX = currentPoint.x + (nextPoint.x - currentPoint.x) * segmentProgress;
-            var newZ = currentPoint.z + (nextPoint.z - currentPoint.z) * segmentProgress;
+            const currentPoint = this.playerWalkPath[currentIndex];
+            const nextPoint = this.playerWalkPath[nextIndex];
+            if (!currentPoint || !nextPoint) {
+                return;
+            }
+
+            const newX = currentPoint.x + (nextPoint.x - currentPoint.x) * segmentProgress;
+            const newZ = currentPoint.z + (nextPoint.z - currentPoint.z) * segmentProgress;
             
             this.playerPiece.position.x = newX;
             this.playerPiece.position.z = newZ;
             
             // Rotate piece to face direction of movement
-            var moveDir = new THREE.Vector3(nextPoint.x - currentPoint.x, 0, nextPoint.z - currentPoint.z);
+            const moveDir = new THREE.Vector3(nextPoint.x - currentPoint.x, 0, nextPoint.z - currentPoint.z);
             if (moveDir.length() > 0.01) {
-                var angle = Math.atan2(moveDir.x, moveDir.z);
-                this.playerPiece.rotation.y = angle;
+                this.playerPiece.rotation.y = Math.atan2(moveDir.x, moveDir.z);
             }
         },
         
-        animatePlayerWalk: function(progress) {
+        animatePlayerWalk: function(progress: number): void {
             // Walking animation - legs swing and body bobs up and down
-            var walkCycle = (progress * this.walkCycleSpeed) % 1;
+            const walkCycle = (progress * this.walkCycleSpeed) % 1;
             
             // Iterate through all children of the player piece
-            for (var i = 0; i < this.playerPiece.children.length; i++) {
-                var child = this.playerPiece.children[i];
+            for (const element of this.playerPiece.children) {
+                const child = element;
                 
                 // Get original position (stored or use current as baseline)
-                if (!child.originalPosition) {
-                    child.originalPosition = child.position.clone();
-                    child.originalRotation = child.rotation.clone();
+                if (!child.userData.originalPosition) {
+                    child.userData.originalPosition = child.position.clone();
+                    child.userData.originalRotation = child.rotation.clone();
                 }
                 
                 // Leg detection by y position
-                if (child.originalPosition.y < -0.4) {
+                const originalPosition = child.userData.originalPosition as THREE.Vector3;
+                const originalRotation = child.userData.originalRotation as THREE.Euler;
+                if (originalPosition.y < -0.4) {
                     // Legs - swing them forward and backward
-                    var legSwing = Math.sin(walkCycle * Math.PI * 2) * this.legSwingAmount;
-                    if (child.originalPosition.x < 0) {
-                        child.rotation.x = child.originalRotation.x + legSwing;
-                    } else if (child.originalPosition.x > 0) {
-                        child.rotation.x = child.originalRotation.x - legSwing;
+                    const legSwing = Math.sin(walkCycle * Math.PI * 2) * this.legSwingAmount;
+                    if (originalPosition.x < 0) {
+                        child.rotation.x = originalRotation.x + legSwing;
+                    } else if (originalPosition.x > 0) {
+                        child.rotation.x = originalRotation.x - legSwing;
                     }
-                } else if (child.originalPosition.y > 0.3) {
+                } else if (originalPosition.y > 0.3) {
                     // Head - bob up and down
-                    var bobAmount = Math.sin(walkCycle * Math.PI * 2) * this.headBobAmount;
-                    child.position.y = child.originalPosition.y + bobAmount;
-                } else if (child.originalPosition.y > -0.1 && child.originalPosition.y < 0.2) {
+                    const bobAmount = Math.sin(walkCycle * Math.PI * 2) * this.headBobAmount;
+                    child.position.y = originalPosition.y + bobAmount;
+                } else if (originalPosition.y > -0.1 && originalPosition.y < 0.2) {
                     // Body - slight bob
-                    var bodyBob = Math.sin(walkCycle * Math.PI * 2) * this.bodyBobAmount;
-                    child.position.y = child.originalPosition.y + bodyBob;
+                    const bodyBob = Math.sin(walkCycle * Math.PI * 2) * this.bodyBobAmount;
+                    child.position.y = originalPosition.y + bodyBob;
                 }
                 
                 // Arms swing opposite to legs
-                if (child.originalPosition.x && Math.abs(child.originalPosition.x) > 0.2 && child.originalPosition.y > -0.2 && child.originalPosition.y < 0.3) {
-                    var armSwing = Math.sin(walkCycle * Math.PI * 2) * this.armSwingAmount;
-                    if (child.originalPosition.x < 0) {
-                        child.rotation.x = child.originalRotation.x - armSwing;
-                    } else if (child.originalPosition.x > 0) {
-                        child.rotation.x = child.originalRotation.x + armSwing;
+                if (originalPosition.x && Math.abs(originalPosition.x) > 0.2 && originalPosition.y > -0.2 && originalPosition.y < 0.3) {
+                    const armSwing = Math.sin(walkCycle * Math.PI * 2) * this.armSwingAmount;
+                    if (originalPosition.x < 0) {
+                        child.rotation.x = originalRotation.x - armSwing;
+                    } else if (originalPosition.x > 0) {
+                        child.rotation.x = originalRotation.x + armSwing;
                     }
                 }
             }
@@ -202,13 +226,13 @@ function createPlayerAnimator(playerPiece, targetSpaceId) {
             this.isAnimating = false;
             
             // Reset all child positions and rotations
-            for (var i = 0; i < this.playerPiece.children.length; i++) {
-                var child = this.playerPiece.children[i];
-                if (child.originalPosition) {
-                    child.position.copy(child.originalPosition);
-                    child.rotation.copy(child.originalRotation);
-                    delete child.originalPosition;
-                    delete child.originalRotation;
+            for (const element of this.playerPiece.children) {
+                const child: THREE.Object3D = element;
+                if (child.userData.originalPosition && child.userData.originalRotation) {
+                    child.position.copy(child.userData.originalPosition as THREE.Vector3);
+                    child.rotation.copy(child.userData.originalRotation as THREE.Euler);
+                    delete child.userData.originalPosition;
+                    delete child.userData.originalRotation;
                 }
             }
             
@@ -224,18 +248,18 @@ function createPlayerAnimator(playerPiece, targetSpaceId) {
     return animator;
 }
 
-function applyIdleAnimations(pieces, nowMs) {
-    var seconds = nowMs * 0.001;
+export function applyIdleAnimations(pieces: THREE.Group[], nowMs: number): void {
+    const seconds: number = nowMs * 0.001;
 
-    for (var pieceIndex = 0; pieceIndex < pieces.length; pieceIndex++) {
-        var piece = pieces[pieceIndex];
+    for (let pieceIndex = 0; pieceIndex < pieces.length; pieceIndex++) {
+        const piece = pieces[pieceIndex];
         if (!piece) {
             continue;
         }
 
-        var pieceHasWalkAnimation = false;
-        for (var checkIndex = 0; checkIndex < piece.children.length; checkIndex++) {
-            if (piece.children[checkIndex].originalPosition) {
+        let pieceHasWalkAnimation: boolean = false;
+        for (const element of piece.children) {
+            if (element.userData.originalPosition) {
                 pieceHasWalkAnimation = true;
                 break;
             }
@@ -246,18 +270,18 @@ function applyIdleAnimations(pieces, nowMs) {
         }
 
         // Get editable animation parameters from piece userData
-        var speedMult = piece.userData.idleSpeedMultiplier !== undefined ? piece.userData.idleSpeedMultiplier : 1.0;
-        var swayAmount = piece.userData.bodySwayAmount !== undefined ? piece.userData.bodySwayAmount : 0.15;
-        var headBobAmount = piece.userData.headBobAmount !== undefined ? piece.userData.headBobAmount : 0.08;
+        const speedMult: number = piece.userData.idleSpeedMultiplier !== undefined ? piece.userData.idleSpeedMultiplier : 1.0;
+        const swayAmount: number = piece.userData.bodySwayAmount !== undefined ? piece.userData.bodySwayAmount : 0.15;
+        const headBobAmount: number = piece.userData.headBobAmount !== undefined ? piece.userData.headBobAmount : 0.08;
 
-        var phase = (piece.userData.idlePhase || 0) + pieceIndex * 0.35;
-        var bodyBob = Math.sin(seconds * 2.2 * speedMult + phase) * headBobAmount;
+        const phase = (piece.userData.idlePhase || 0) + pieceIndex * 0.35;
+        const bodyBob = Math.sin(seconds * 2.2 * speedMult + phase) * headBobAmount;
         piece.position.y = (piece.userData.baseY || piece.position.y) + bodyBob;
 
-        for (var childIndex = 0; childIndex < piece.children.length; childIndex++) {
-            var child = piece.children[childIndex];
-            var basePos = child.userData.idleBasePosition;
-            var baseRot = child.userData.idleBaseRotation;
+        for (const element of piece.children) {
+            const child: THREE.Object3D = element;
+            const basePos: THREE.Vector3 = child.userData.idleBasePosition;
+            const baseRot: THREE.Euler = child.userData.idleBaseRotation;
 
             if (!basePos || !baseRot) {
                 continue;
@@ -271,10 +295,9 @@ function applyIdleAnimations(pieces, nowMs) {
                 child.position.y += Math.sin(seconds * 3.0 * speedMult + phase) * headBobAmount * 0.5;
             } else if (basePos.y > -0.2 && Math.abs(basePos.x) > 0.2) {
                 // Arm swing with sway amount modifier
-                var armSwing = Math.sin(seconds * 2.4 * speedMult + phase) * swayAmount;
+                const armSwing: number = Math.sin(seconds * 2.4 * speedMult + phase) * swayAmount;
                 child.rotation.x += basePos.x < 0 ? -armSwing : armSwing;
             }
         }
     }
 }
-

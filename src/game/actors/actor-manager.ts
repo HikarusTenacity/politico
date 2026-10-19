@@ -2,8 +2,16 @@
 
 // Distribute pieces evenly within a space
 // Returns array of positions for each piece
-function distributePiecesInSpace(piecesAtSpace: any[], spaceId: number) {
-    const spaceBounds = getSpaceBounds(spaceId);
+import * as THREE from 'three';
+import {getSpaceBounds} from "../board/board-queries";
+import {getPiecesAtSpace} from "./players/getters";
+import {PLAYER_PIECES, PLAYERS} from './players/player-manager';
+
+function distributePiecesInSpace(
+    piecesAtSpace: ReturnType<typeof getPiecesAtSpace>,
+    spaceId: number
+) {
+    const spaceBounds = getSpaceBounds(spaceId) || { xMin: 0, xMax: 1, zMin: 0, zMax: 1 };
     const pieceCount = piecesAtSpace.length;
 
     if (pieceCount === 0) return [];
@@ -20,6 +28,10 @@ function distributePiecesInSpace(piecesAtSpace: any[], spaceId: number) {
     let cellDepth = depth / rows;
 
     for (let i = 0; i < pieceCount; i++) {
+        const pieceAtSpace = piecesAtSpace[i];
+        if (!pieceAtSpace) {
+            continue;
+        }
         let col = i % cols;
         let row = Math.floor(i / cols);
 
@@ -29,7 +41,7 @@ function distributePiecesInSpace(piecesAtSpace: any[], spaceId: number) {
         positions.push({
             x: x,
             z: z,
-            playerIndex: piecesAtSpace[i].playerId
+            playerIndex: pieceAtSpace.playerId
         });
     }
 
@@ -37,7 +49,7 @@ function distributePiecesInSpace(piecesAtSpace: any[], spaceId: number) {
 }
 
 // Update a piece's position to match its player's space
-function updatePiecePosition(piece, position) {
+function updatePiecePosition(piece: THREE.Group, position: { x: number; z: number }) {
     if (piece && position) {
         piece.position.x = position.x;
         piece.position.z = position.z;
@@ -45,30 +57,41 @@ function updatePiecePosition(piece, position) {
 }
 
 // Update all pieces on board based on player positions
-function updateAllPiecePositions() {
+export function updateAllPiecePositions() {
     for (let playerId = 0; playerId < PLAYERS.length; playerId++) {
         const player = PLAYERS[playerId];
+        if (!player) {
+            continue;
+        }
         const piecesAtSpace = getPiecesAtSpace(player.currentSpace);
         const positions = distributePiecesInSpace(piecesAtSpace, player.currentSpace);
 
-        for (let i = 0; i < positions.length; i++) {
-            if (positions[i].playerIndex === playerId && player.piece) {
-                updatePiecePosition(player.piece, positions[i]);
+        for (const element of positions) {
+            if (element.playerIndex === playerId && player.piece) {
+                updatePiecePosition(player.piece, element);
             }
         }
     }
 }
 
 
-function setPlayerPiece(playerId, piece) {
+
+export function setPlayerPiece(playerId: number, piece: THREE.Group) {
     if (playerId >= 0 && playerId < PLAYERS.length) {
-        PLAYERS[playerId].piece = piece;
+        const player = PLAYERS[playerId];
+        if (!player) {
+            return;
+        }
+        player.piece = piece;
         PLAYER_PIECES[playerId] = piece;
     }
 }
 
-function movePlayerToSpace(playerId, spaceId) {
+export function movePlayerToSpace(playerId: number, spaceId: number) {
     if (playerId >= 0 && playerId < PLAYERS.length) {
-        PLAYERS[playerId].currentSpace = spaceId;
+        const player = PLAYERS[playerId];
+        if (player) {
+            player.currentSpace = spaceId;
+        }
     }
 }

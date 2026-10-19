@@ -10,9 +10,9 @@ import { getSpaceIdFromCoordinates } from '../game/board/board-queries';
 export function getGridCoordinates(worldX: number, worldZ: number): {
     x: string;
     z: string;
-    spaceId: number
+    spaceId: number | null;
 } {
-    const spaceId = getSpaceIdFromCoordinates(worldX, worldZ);
+    const spaceId: number | null = getSpaceIdFromCoordinates(worldX, worldZ);
     
     return {
         x: worldX.toFixed(2),

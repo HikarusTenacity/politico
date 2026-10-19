@@ -1,4 +1,4 @@
-import {SkyQuality} from "../types/environment-types";
+import type {SkyQuality} from "../types/environment-types";
 
 export const GROUND_TEXTURE_PATH: string = 'assets/board.png';
 export const CLOUD_EFFECTS_ENABLED: boolean = true;

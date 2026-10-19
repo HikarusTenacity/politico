@@ -5,41 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Politico!</title>
 </head>
-<body>
+<body translate="no" class="notranslate">
 <div id="info"></div>
 <div id="turnDisplay"></div>
 
 <script type="module" src="/src/main.ts"></script>
-</body>
-</html>
-
-window.__KUROKANE_FONT_URL__ = window.__KUROKANE_FONT_URL__ || 'assets/fonts/Kurokane.woff2';
-
-(function loadKurokaneDynamically() {
-    var fontUrl = window.__KUROKANE_FONT_URL__ || localStorage.getItem('kurokaneFontUrl') || '';
-    if (!fontUrl || !window.FontFace || !document.fonts) {
-        return;
-    }
-
-    var kurokaneFace = new FontFace('Kurokane', 'url(' + fontUrl + ')');
-    kurokaneFace.load().then(function(loadedFace) {
-        document.fonts.add(loadedFace);
-        document.documentElement.classList.add('kurokane-loaded');
-    }).catch(function(error) {
-        console.warn('Failed to load Kurokane font:', error);
-    });
-})();
-</script>
-</head>
-<body translate="no" class="notranslate">
-<div id="info"></div>
-<div id="turnDisplay"></div>
-<script>
-window.PLAYERS = window.PLAYERS || [];
-</script>
-<!-- Libraries -->
-<script src="/three.min.js"></script>
-<!-- Bundled game runtime built from TypeScript -->
-<script src="/game.bundle.js"></script>
 </body>
 </html>

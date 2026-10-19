@@ -1,35 +1,48 @@
 import * as THREE from 'three';
-import { PLAYERS, setPlayerPiece, movePlayerToSpace, updateAllPiecePositions } from './player-manager';
-import { createDiceAnimator } from './dice-animator';
-import { createLocalMultiplayerInput } from './input-handler';
+import { setPlayerPiece, movePlayerToSpace, updateAllPiecePositions } from './actors/actor-manager';
+import { createDiceAnimator } from './animations/dice-animator';
+import { createLocalMultiplayerInput } from '../input/local-multiplayer';
+import type { DiceAnimator } from '../types/animation-types';
+import type { LocalMultiplayerInput } from "../types/input";
+import type {
+    GameManager,
+    GameState,
+    NameEntryState,
+    PieceExitAnimation,
+    PregameRoll
+} from '../types/game-manager-types';
+import type {PlayerState} from "../types/player-types";
+import {BOARD_SPACES} from "./board/board-layout";
+import {PLAYERS} from "./actors/players/player-manager";
 
 // Game manager for local 4-player co-op
-function createGameManager(
+export function createGameManager(
     scene: THREE.Scene,
     camera: THREE.PerspectiveCamera,
-    worldPieces: THREE.Object3D[],
-    rendererDomElement: HTMLElement) {
+    worldPieces: THREE.Group[],
+    rendererDomElement: HTMLElement
+): GameManager {
     const manager = {
         currentPlayerIndex: 0,
-        gameState: 'PRE_GAME_SELECT',  // PRE_GAME_SELECT, PRE_GAME_ROLL_RESULTS, TURN_START, ROLLING, MOVING, TURN_END
+        gameState: 'PRE_GAME_SELECT' as GameState,
         diceRoll: 0,
         targetSpace: 0,
         isLocalGame: true,
         scene: scene,
         camera: camera,
         worldPieces: worldPieces || [],
-        diceAnimator: null,
+        diceAnimator: null as DiceAnimator | null,
         selectingPlayerIndex: 0,
-        availablePieceIndices: [],
-        selectedPieceByPlayer: [],
+        availablePieceIndices: [] as number[],
+        selectedPieceByPlayer: [] as number[],
         selectionCursor: 0,
-        pregameRolls: [],
-        turnOrder: [],
+        pregameRolls: [] as PregameRoll[],
+        turnOrder: [] as number[],
         hoveredPieceIndex: -1,
         pregameRaycaster: new THREE.Raycaster(),
         pregameMouse: new THREE.Vector2(0, 0),
-        pregameExitAnimations: [],
-        pregameNameEntry: null,
+        pregameNameEntry: null as NameEntryState | null,
+        pregameExitAnimations: [] as PieceExitAnimation[],
         pregameNameMessage: '',
         pregameNameCharacters: ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.!?#',
         pregameNameKeyboardRows: ['ABCDEFGHIJ', 'KLMNOPQRST', 'UVWXYZ.!?#','1234567890'],
@@ -38,13 +51,12 @@ function createGameManager(
         rendererDomElement: rendererDomElement,
         
         // Input handler for controllers/keyboard
-        inputHandler: null,
+        inputHandler: null as LocalMultiplayerInput | null,
         
-        init: function() {
+        init: function(): void {
             // Initialize dice animator
-            let self = this;
             this.diceAnimator = createDiceAnimator(this.scene, this.camera);
-            this.diceAnimator.gameManager = self;
+            this.diceAnimator.gameManager = this;
             this.diceAnimator.setSpeedMultiplier(this.animationSpeed);
 
             this.initializeCharacterSelect();
@@ -55,16 +67,15 @@ function createGameManager(
             this.inputHandler.init();
             
             // Bind input actions
-            self = this;
-            this.inputHandler.onActionForPlayer = function(playerId: number, action: string) {
-                self.handlePlayerAction(playerId, action);
+            this.inputHandler.onActionForPlayer = (playerId: string | number, action: string): void => {
+                this.handlePlayerAction(playerId, action);
             };
-            this.inputHandler.onRawKeyInput = function(key: string, event: KeyboardEvent) {
-                return self.handleRawKeyboardInput(key, event);
+            this.inputHandler.onRawKeyInput = (key: string, event: KeyboardEvent): boolean => {
+                return this.handleRawKeyboardInput(key, event);
             };
         },
         
-        update: function() {
+        update: function(): void {
             if (this.inputHandler) {
                 this.inputHandler.update();
                 this.updateActionButton();
@@ -81,8 +92,8 @@ function createGameManager(
             this.updateGameState();
         },
 
-        updateActionButton: function() {
-            if (!this.inputHandler || !this.inputHandler.actionButton) return;
+        updateActionButton: function(): void {
+            if (!this.inputHandler?.actionButton) return;
             
             switch(this.gameState) {
                 case 'PRE_GAME_SELECT':
@@ -117,7 +128,7 @@ function createGameManager(
             }
         },
         
-        updateGameState: function() {
+        updateGameState: function(): void {
             switch(this.gameState) {
                 case 'PRE_GAME_SELECT':
                 case 'PRE_GAME_ROLL_RESULTS':
@@ -127,7 +138,7 @@ function createGameManager(
                     break;
                 case 'ROLLING':
                     // Wait for animation to finish
-                    if (!this.diceAnimator.isAnimating) {
+                    if (this.diceAnimator && !this.diceAnimator.isAnimating) {
                         // Animation finished, move to MOVING state
                         this.gameState = 'MOVING';
                     }
@@ -142,10 +153,11 @@ function createGameManager(
             }
         },
         
-        handlePlayerAction: function(playerId: string, action: string) {
+        handlePlayerAction: function(playerId: string | number, action: string): void {
             if (action === 'ACTION') {
                 action = 'ROLL';
             }
+
             if ((this.gameState === 'TURN_START' || this.gameState === 'ROLLING' || this.gameState === 'MOVING' || this.gameState === 'TURN_END') &&
                 playerId !== 'ANY' && playerId !== this.currentPlayerIndex) {
                 return;
@@ -190,11 +202,11 @@ function createGameManager(
             }
         },
 
-        handleRawKeyboardInput: function(key: string, event: KeyboardEvent) {
+        handleRawKeyboardInput: function(key: string, event: KeyboardEvent): boolean {
             return false;
         },
 
-        initializeCharacterSelect: function() {
+        initializeCharacterSelect: function(): void {
             this.availablePieceIndices = [];
             this.selectedPieceByPlayer = [];
             this.selectingPlayerIndex = 0;
@@ -207,9 +219,9 @@ function createGameManager(
                 this.availablePieceIndices.push(i);
             }
 
-            for (let i = 0; i < PLAYERS.length; i++) {
+            for (const element of PLAYERS) {
                 this.selectedPieceByPlayer.push(-1);
-                PLAYERS[i].piece = null;
+                element.piece = null;
             }
 
             this.initNameEntryForCurrentPlayer();
@@ -217,39 +229,46 @@ function createGameManager(
             this.layoutCharacterSelectPieces();
         },
 
-        setupPregamePointerHandlers: function() {
+        setupPregamePointerHandlers: function(): void {
             if (!this.rendererDomElement) return;
 
-            const self = this;
-
-            this.rendererDomElement.addEventListener('mousemove', function(event) {
-                self.handlePregameMouseMove(event);
+            this.rendererDomElement.addEventListener(
+                'mousemove',
+                (event: MouseEvent): void => {
+                this.handlePregameMouseMove(event);
             });
 
-            this.rendererDomElement.addEventListener('mouseleave', function() {
-                self.setHoveredPieceIndex(-1);
+            this.rendererDomElement.addEventListener(
+                'mouseleave',
+                (): void => {
+                this.setHoveredPieceIndex(-1);
             });
 
-            this.rendererDomElement.addEventListener('click', function(event) {
-                self.handleClick(event);
+            this.rendererDomElement.addEventListener(
+                'click',
+                (event: MouseEvent): void => {
+                this.handleClick(event);
             });
         },
 
-        handlePregameMouseMove: function(event: MouseEvent) {
+        handlePregameMouseMove: function(event: MouseEvent): void {
             if (this.gameState !== 'PRE_GAME_SELECT' || this.isNameEntryActive()) {
                 this.setHoveredPieceIndex(-1);
                 return;
             }
 
-            const rect = this.rendererDomElement.getBoundingClientRect();
+            const rect: DOMRect = this.rendererDomElement.getBoundingClientRect();
             this.pregameMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             this.pregameMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
             this.pregameRaycaster.setFromCamera(this.pregameMouse, this.camera);
 
-            const availableRoots = [];
-            for (let i = 0; i < this.availablePieceIndices.length; i++) {
-                availableRoots.push(this.worldPieces[this.availablePieceIndices[i]]);
+            const availableRoots: THREE.Object3D[] = [];
+            for (const element of this.availablePieceIndices) {
+                const piece = this.worldPieces[element];
+                if (piece) {
+                    availableRoots.push(piece);
+                }
             }
 
             const intersections = this.pregameRaycaster.intersectObjects(availableRoots, true);
@@ -258,11 +277,13 @@ function createGameManager(
                 return;
             }
 
-            const hoveredIndex = this.resolvePieceIndexFromObject(intersections[0].object);
+            const intersection = intersections[0];
+            if (!intersection) return;
+            const hoveredIndex: number = this.resolvePieceIndexFromObject(intersection.object);
             this.setHoveredPieceIndex(hoveredIndex);
         },
 
-        handlePregameClick: function() {
+        handlePregameClick: function(): void {
             if (this.gameState !== 'PRE_GAME_SELECT' || this.isNameEntryActive()) return;
 
             if (this.hoveredPieceIndex >= 0) {
@@ -271,15 +292,15 @@ function createGameManager(
             }
         },
         
-        handleClick: function(event: MouseEvent) {
+        handleClick: function(event: MouseEvent): void {
             if (this.gameState === 'PRE_GAME_SELECT') {
                 this.handlePregameClick();
                 return;
             }
 
             if (this.diceAnimator && this.gameState === 'ROLLING') {
-                const rect = this.rendererDomElement.getBoundingClientRect();
-                const mouse = new THREE.Vector2();
+                const rect: DOMRect = this.rendererDomElement.getBoundingClientRect();
+                const mouse: THREE.Vector2 = new THREE.Vector2();
                 mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
                 mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
                 
@@ -288,10 +309,10 @@ function createGameManager(
             }
         },
 
-        resolvePieceIndexFromObject: function(object3D: THREE.Object3D) {
-            let cursor = object3D;
+        resolvePieceIndexFromObject: function(object3D: THREE.Object3D): number {
+            let cursor: THREE.Object3D | null = object3D;
             while (cursor) {
-                for (var i = 0; i < this.worldPieces.length; i++) {
+                for (let i = 0; i < this.worldPieces.length; i++) {
                     if (this.worldPieces[i] === cursor) return i;
                 }
                 cursor = cursor.parent;
@@ -303,13 +324,19 @@ function createGameManager(
             if (pieceIndex === this.hoveredPieceIndex) return;
 
             if (this.hoveredPieceIndex >= 0) {
-                this.setPieceGlow(this.worldPieces[this.hoveredPieceIndex], false);
+                const piece = this.worldPieces[this.hoveredPieceIndex];
+                if (piece) {
+                    this.setPieceGlow(piece, false);
+                }
             }
 
             this.hoveredPieceIndex = pieceIndex;
 
             if (this.hoveredPieceIndex >= 0) {
-                this.setPieceGlow(this.worldPieces[this.hoveredPieceIndex], true);
+                const piece = this.worldPieces[this.hoveredPieceIndex];
+                if (piece) {
+                    this.setPieceGlow(piece, true);
+                }
                 const cursorInAvailable = this.availablePieceIndices.indexOf(this.hoveredPieceIndex);
                 if (cursorInAvailable >= 0) {
                     this.selectionCursor = cursorInAvailable;
@@ -317,7 +344,7 @@ function createGameManager(
             }
         },
 
-        setPieceGlow: function(piece: THREE.Object3D, glowOn: boolean) {
+        setPieceGlow: function(piece: THREE.Object3D, glowOn: boolean): void {
             if (!piece) return;
 
             if (glowOn) {
@@ -325,16 +352,16 @@ function createGameManager(
                     piece.userData.outlineObjects = [];
                 }
                 if (piece.userData.outlineObjects.length === 0) {
-                    piece.traverse(function(node: THREE.Object3D) {
-                        if (!node.isMesh || !node.geometry) return;
+                    piece.traverse(function(node: THREE.Object3D): void {
+                        if (!(node instanceof THREE.Mesh) || !node.geometry) return;
 
-                        const box = new THREE.Box3().setFromObject(node);
-                        const size = box.getSize(new THREE.Vector3());
-                        const volume = size.x * size.y * size.z;
+                        const box: THREE.Box3 = new THREE.Box3().setFromObject(node);
+                        const size: THREE.Vector3 = box.getSize(new THREE.Vector3());
+                        const volume: number = size.x * size.y * size.z;
                         if (volume < 0.025) return;
 
-                        const edges = new THREE.EdgesGeometry(node.geometry);
-                        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ 
+                        const edges: THREE.EdgesGeometry = new THREE.EdgesGeometry(node.geometry);
+                        const line: THREE.LineSegments = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({
                             color: 0xffffff, 
                             linewidth: 2,
                             fog: false
@@ -355,8 +382,8 @@ function createGameManager(
                 }
             } else {
                 if (piece.userData.outlineObjects) {
-                    for (let i = 0; i < piece.userData.outlineObjects.length; i++) {
-                        const obj = piece.userData.outlineObjects[i];
+                    for (const element of piece.userData.outlineObjects) {
+                        const obj: { mesh: THREE.Object3D, line: THREE.LineSegments } = element;
                         obj.mesh.remove(obj.line);
                     }
                     piece.userData.outlineObjects = [];
@@ -377,26 +404,30 @@ function createGameManager(
             this.layoutCharacterSelectPieces();
         },
 
-        confirmCharacterSelection: function() {
+        confirmCharacterSelection: function(): void {
             if (this.availablePieceIndices.length === 0) return;
 
-            var pieceIndex = this.availablePieceIndices[this.selectionCursor];
+            const pieceIndex: number | undefined = this.availablePieceIndices[this.selectionCursor];
+            if (pieceIndex === undefined) return;
             this.confirmCharacterSelectionByPieceIndex(pieceIndex);
         },
 
-        confirmCharacterSelectionByPieceIndex: function(pieceIndex: number) {
-            const availableIndex = this.availablePieceIndices.indexOf(pieceIndex);
+        confirmCharacterSelectionByPieceIndex: function(pieceIndex: number): void {
+            const availableIndex: number = this.availablePieceIndices.indexOf(pieceIndex);
             if (availableIndex < 0) return;
 
             this.selectionCursor = availableIndex;
-            const playerIndex = this.selectingPlayerIndex;
-            const piece = this.worldPieces[pieceIndex];
+            const playerIndex: number = this.selectingPlayerIndex;
+            const piece: THREE.Group | undefined = this.worldPieces[pieceIndex];
+            if (!piece) return;
 
             this.setPieceGlow(piece, false);
             this.hoveredPieceIndex = -1;
 
             setPlayerPiece(playerIndex, piece);
-            PLAYERS[playerIndex].pieceType = 'Character ' + (pieceIndex + 1);
+            const player = PLAYERS[playerIndex];
+            if (!player) return;
+            player.pieceType = 'Character ' + (pieceIndex + 1);
             this.selectedPieceByPlayer[playerIndex] = pieceIndex;
 
             this.availablePieceIndices.splice(availableIndex, 1);
@@ -416,10 +447,8 @@ function createGameManager(
             }
         },
 
-        normalizePlayerName: function(rawName) {
-            if (typeof rawName !== 'string') return '';
-
-            let trimmed = rawName.toUpperCase().trim();
+        normalizePlayerName: function(rawName: string): string {
+            let trimmed: string = rawName.toUpperCase().trim();
             if (!trimmed) return '';
 
             if (trimmed.length > this.pregameNameLength) {
@@ -429,20 +458,20 @@ function createGameManager(
             return trimmed;
         },
 
-        isNameEntryActive: function() {
+        isNameEntryActive: function(): boolean {
             return this.gameState === 'PRE_GAME_SELECT' &&
                 this.selectingPlayerIndex < PLAYERS.length &&
                 !!this.pregameNameEntry;
         },
 
-        initNameEntryForCurrentPlayer: function() {
+        initNameEntryForCurrentPlayer: function(): void {
             if (this.selectingPlayerIndex >= PLAYERS.length) {
                 this.pregameNameEntry = null;
                 return;
             }
 
-            const playerIndex = this.selectingPlayerIndex;
-            let slots = [];
+            const playerIndex: number = this.selectingPlayerIndex;
+            let slots: string[] = [];
 
             for (let i = 0; i < this.pregameNameLength; i++) {
                 slots.push(' ');
@@ -460,6 +489,7 @@ function createGameManager(
             if (!this.isNameEntryActive()) return '';
 
             const entry = this.pregameNameEntry;
+            if (!entry) return '';
 
             let out = '';
             for (let i = 0; i < entry.slots.length; i++) {
@@ -475,13 +505,16 @@ function createGameManager(
         getNameEntrySelectedCharacter: function() {
             if (!this.isNameEntryActive()) return ' ';
 
-            return this.pregameNameEntry.slots[this.pregameNameEntry.cursor] ?? ' ';
+            const entry = this.pregameNameEntry;
+            if (!entry) return ' ';
+            return entry.slots[entry.cursor] ?? ' ';
         },
 
         moveNameEntryCursor: function(delta: number) {
             if (!this.isNameEntryActive()) return;
 
             const entry = this.pregameNameEntry;
+            if (!entry) return;
             entry.cursor = (entry.cursor + delta + this.pregameNameLength) % this.pregameNameLength;
         },
 
@@ -491,31 +524,34 @@ function createGameManager(
             }
 
             const entry = this.pregameNameEntry;
-            const chars = this.pregameNameCharacters;
-            const currentChar = entry.slots[entry.cursor] ?? ' ';
+            if (!entry) return;
+            const chars: string = this.pregameNameCharacters;
+            const currentChar: string = entry.slots[entry.cursor] ?? ' ';
             
-            let index = chars.indexOf(currentChar);
+            let index: number = chars.indexOf(currentChar);
             if (index < 0) {
                 index = 0;
             }
 
-            const nextIndex = (index + delta + chars.length) % chars.length;
+            const nextIndex: number = (index + delta + chars.length) % chars.length;
 
             entry.slots[entry.cursor] = chars.charAt(nextIndex);
         },
 
-        setNameEntryCursor: function(cursorIndex: number) {
+        setNameEntryCursor: function(cursorIndex: number): boolean {
             if (!this.isNameEntryActive()) return false;
 
             if (cursorIndex < 0 || cursorIndex >= this.pregameNameLength) {
                 return false;
             }
 
-            this.pregameNameEntry.cursor = cursorIndex;
+            const entry = this.pregameNameEntry;
+            if (!entry) return false;
+            entry.cursor = cursorIndex;
             return true;
         },
 
-        setNameEntryCharacter: function(character: string) {
+        setNameEntryCharacter: function(character: string): boolean {
             if (!this.isNameEntryActive()) return false;
 
             let normalizedChar = character === '_' ? ' ' : character;
@@ -524,11 +560,13 @@ function createGameManager(
             }
 
             normalizedChar = normalizedChar.charAt(0).toUpperCase();
-            if (this.pregameNameCharacters.indexOf(normalizedChar) < 0) {
+            if (!this.pregameNameCharacters.includes(normalizedChar)) {
                 return false;
             }
 
-            this.pregameNameEntry.slots[this.pregameNameEntry.cursor] = normalizedChar;
+            const entry = this.pregameNameEntry;
+            if (!entry) return false;
+            entry.slots[entry.cursor] = normalizedChar;
             return true;
         },
 
@@ -536,6 +574,7 @@ function createGameManager(
             if (!this.isNameEntryActive()) return false;
 
             const entry = this.pregameNameEntry;
+            if (!entry) return false;
             const cursor = entry.cursor;
 
             if (entry.slots[cursor] !== ' ') {
@@ -553,8 +592,9 @@ function createGameManager(
                 return false;
             }
 
-            var entry = this.pregameNameEntry;
-            var name = this.normalizePlayerName(entry.slots.join(''));
+            const entry = this.pregameNameEntry;
+            if (!entry) return false;
+            let name: string = this.normalizePlayerName(entry.slots.join(''));
             
             //default name
             if (!name) name = 'player_' + (entry.playerIndex + 1);
@@ -565,7 +605,9 @@ function createGameManager(
                 return false;
             }
 
-            PLAYERS[entry.playerIndex].name = name;
+            const player = PLAYERS[entry.playerIndex];
+            if (!player) return false;
+            player.name = name;
             this.pregameNameEntry = null;
             this.pregameNameMessage = '';
             this.selectingPlayerIndex += 1;
@@ -575,21 +617,23 @@ function createGameManager(
             return true;
         },
 
-        isPlayerNameTaken: function(candidateName: string, currentPlayerIndex: number) {
-            const lowerCandidate = candidateName.toLowerCase();
+        isPlayerNameTaken: function(candidateName: string, currentPlayerIndex: number): boolean {
+            const lowerCandidate: string = candidateName.toLowerCase();
             for (let i = 0; i < PLAYERS.length; i++) {
                 if (i === currentPlayerIndex) {
                     continue;
                 }
-                const existingName = this.normalizePlayerName(PLAYERS[i].name);
-                if (existingName && existingName.toLowerCase() === lowerCandidate) {
+                const player = PLAYERS[i];
+                if (!player) continue;
+                const existingName = this.normalizePlayerName(player.name);
+                if (existingName?.toLowerCase() === lowerCandidate) {
                     return true;
                 }
             }
             return false;
         },
 
-        startPieceExitAnimation: function(piece, playerIndex) {
+        startPieceExitAnimation: function(piece: THREE.Object3D, playerIndex: number): void {
             this.pregameExitAnimations.push({
                 piece: piece,
                 startX: piece.position.x,
@@ -601,15 +645,16 @@ function createGameManager(
             });
         },
 
-        updatePregameExitAnimations: function() {
+        updatePregameExitAnimations: function(): void {
             if (this.pregameExitAnimations.length === 0) return;
 
-            const now = Date.now();
+            const now: number = Date.now();
             for (let i = this.pregameExitAnimations.length - 1; i >= 0; i--) {
                 const anim = this.pregameExitAnimations[i];
-                const speed = Math.max(0.25, this.animationSpeed || 1);
-                const progress = Math.min(((now - anim.startTime) * speed) / anim.duration, 1);
-                const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                if (!anim) continue;
+                const speed: number = Math.max(0.25, this.animationSpeed || 1);
+                const progress: number = Math.min(((now - anim.startTime) * speed) / anim.duration, 1);
+                const eased: number = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
                 anim.piece.position.x = anim.startX + (anim.endX - anim.startX) * eased;
                 anim.piece.position.z = anim.startZ + (anim.endZ - anim.startZ) * eased;
@@ -621,24 +666,24 @@ function createGameManager(
             }
         },
 
-        rollPregameOrder: function() {
+        rollPregameOrder: function(): void {
             this.pregameRolls = [];
             this.turnOrder = [];
 
             for (let i = 0; i < PLAYERS.length; i++) {
-                const roll = Math.floor(Math.random() * 6) + 1;
+                const roll: number = Math.floor(Math.random() * 6) + 1; //NOSONAR
                 this.pregameRolls.push({ playerIndex: i, roll: roll });
             }
 
-            const sorted = this.pregameRolls.slice().sort(function(a, b) {
+            const sorted: PregameRoll[] = this.pregameRolls.slice().sort(function(a, b) {
                 if (b.roll !== a.roll) {
                     return b.roll - a.roll;
                 }
                 return a.playerIndex - b.playerIndex;
             });
 
-            for (let j = 0; j < sorted.length; j++) {
-                this.turnOrder.push(sorted[j].playerIndex);
+            for (const element of sorted) {
+                this.turnOrder.push(element.playerIndex);
             }
 
             this.currentPlayerIndex = this.turnOrder[0] || 0;
@@ -646,7 +691,7 @@ function createGameManager(
             this.layoutCharacterSelectPieces();
         },
 
-        startGameAfterPregame: function() {
+        startGameAfterPregame: function(): void {
             for (let i = 0; i < PLAYERS.length; i++) {
                 movePlayerToSpace(i, 0);
             }
@@ -660,8 +705,8 @@ function createGameManager(
             const availableStartX = -((availableCount - 1) * availableSpacing) / 2;
             const availableZ = 0.9;
 
-            for (let i = 0; i < this.worldPieces.length; i++) {
-                const piece = this.worldPieces[i];
+            for (const element of this.worldPieces) {
+                const piece = element;
                 if (!piece.userData.baseScale) {
                     piece.userData.baseScale = piece.scale.clone();
                 }
@@ -670,7 +715,9 @@ function createGameManager(
 
             for (let k = 0; k < this.availablePieceIndices.length; k++) {
                 const availablePieceIndex = this.availablePieceIndices[k];
+                if (availablePieceIndex === undefined) continue;
                 const availablePiece = this.worldPieces[availablePieceIndex];
+                if (!availablePiece) continue;
                 availablePiece.position.x = availableStartX + k * availableSpacing;
                 availablePiece.position.z = availableZ;
                 availablePiece.rotation.y = Math.PI;
@@ -681,18 +728,23 @@ function createGameManager(
             }
         },
 
-        isPregame: function() {
+        isPregame: function(): boolean {
             return this.gameState === 'PRE_GAME_SELECT' || 
                    this.gameState === 'PRE_GAME_ROLL_RESULTS';
         },
         
-        startRolling: function() {
+        startRolling: function(): void {
             this.gameState = 'ROLLING';
             const currentPlayer = PLAYERS[this.currentPlayerIndex];
-            this.diceRoll = Math.floor(Math.random() * 6) + 1;
-            this.targetSpace = (currentPlayer.currentSpace + this.diceRoll) % 40;
+            const diceAnimator = this.diceAnimator;
+            if (!currentPlayer || !currentPlayer.piece || !diceAnimator) {
+                this.gameState = 'TURN_START';
+                return;
+            }
+            this.diceRoll = Math.floor(Math.random() * 6) + 1; //NOSONAR
+            this.targetSpace = (currentPlayer.currentSpace + this.diceRoll) % BOARD_SPACES.length;
             movePlayerToSpace(this.currentPlayerIndex, this.targetSpace);
-            this.diceAnimator.rollDice(
+            diceAnimator.rollDice(
                 currentPlayer.name,
                 currentPlayer.color,
                 currentPlayer.piece,
@@ -701,11 +753,11 @@ function createGameManager(
             );
         },
         
-        endTurn: function() {
+        endTurn: function(): void {
             if (this.turnOrder.length > 0) {
                 let currentTurnOrderIndex = this.turnOrder.indexOf(this.currentPlayerIndex);
                 const nextOrderIndex = (currentTurnOrderIndex + 1) % this.turnOrder.length;
-                this.currentPlayerIndex = this.turnOrder[nextOrderIndex];
+                this.currentPlayerIndex = this.turnOrder[nextOrderIndex] ?? this.currentPlayerIndex;
             } else {
                 this.currentPlayerIndex = (this.currentPlayerIndex + 1) % 4;
             }
@@ -713,14 +765,14 @@ function createGameManager(
             this.diceRoll = 0;
         },
         
-        getCurrentPlayer: function() {
+        getCurrentPlayer: function(): PlayerState | undefined {
             return PLAYERS[this.currentPlayerIndex];
         },
 
-        setGameSpeed: function(multiplier: number) {
+        setGameSpeed: function(multiplier: number): void {
             this.animationSpeed = Math.max(0.5, Math.min(2.0, multiplier || 1));
 
-            if (this.diceAnimator && this.diceAnimator.setSpeedMultiplier) {
+            if (this.diceAnimator?.setSpeedMultiplier) {
                 this.diceAnimator.setSpeedMultiplier(this.animationSpeed);
             }
         }

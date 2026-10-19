@@ -1,17 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "noImplicitAny": false,
-    "allowJs": false,
-    "checkJs": false,
     "noEmit": true,
-    "strict": false,
+    "strict": true,
     "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["js/**/*.ts", "types/**/*.d.ts"],
-  "exclude": ["js/lib/**", "node_modules", "dist"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "exclude": ["src/lib/**", "node_modules", "dist"]
 }

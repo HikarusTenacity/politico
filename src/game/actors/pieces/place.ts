@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export function placePieceOnGround(piece: THREE.Mesh, x: number, z: number, groundY: number): void {
+export function placePieceOnGround(piece: THREE.Group, x: number, z: number, groundY: number): void {
     piece.position.x = x;
     piece.position.z = z;
 
@@ -10,7 +10,7 @@ export function placePieceOnGround(piece: THREE.Mesh, x: number, z: number, grou
     piece.position.y += deltaY;
 }
 
-export function positionPiecesForCharacterSelect(pieces: THREE.Mesh[]) {
+export function positionPiecesForCharacterSelect(pieces: THREE.Group[]) {
     const spacing = 2.2;
     const startX: number = -((pieces.length - 1) * spacing) / 2;
     const centerZ = 1.2;

@@ -7,6 +7,17 @@ import { createAEASymbol } from './aea';
 export function createGuy(color: string): THREE.Group {
     const guy = new THREE.Group();
     let bodyColor: number;
+    if (color === "red") {
+        bodyColor = 0xff0000;
+    } else if (color === "blue") {
+        bodyColor = 0x0000ff;
+    } else if (color === "green") {
+        bodyColor = 0x00ff00;
+    } else if (color === "yellow") {
+        bodyColor = 0xffff00;
+    } else {
+        bodyColor = 0xffffff; // default to white if color is not recognized
+    }
 
     const body = new THREE.Mesh(
         new THREE.BoxGeometry(0.5, 0.8, 0.35),

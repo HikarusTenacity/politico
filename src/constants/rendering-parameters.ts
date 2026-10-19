@@ -1,10 +1,16 @@
 import * as THREE from 'three';
 
-export const GAME_RENDER_CONFIG = {
+export const GAME_RENDER_CONFIG: {
+    pixelationScale: number;
+    rendererOptions: {
+        antialias: boolean;
+        powerPreference: WebGLPowerPreference;
+    };
+} = {
     pixelationScale: 2,
     rendererOptions: {
         antialias: false,
-        powerPreference: 'high-performance'
+        powerPreference: 'high-performance',
     },
 };
 

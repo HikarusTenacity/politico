@@ -1,16 +1,51 @@
 import * as THREE from 'three';
-import { createGamePieces, updateAllPiecePositions, positionPiecesForCharacterSelect } from './game/actors/pieces/place';
-import './styles/main.css';
 
+import { createGamePieces } from './game/actors/pieces/create';
+import { positionPiecesForCharacterSelect } from './game/actors/pieces/place';
+import { updateAllPiecePositions } from './game/actors/actor-manager';
+
+import { initializeBoardSpaces} from "./game/board/board-layout";
+import { createPlayableSpacesVisualization, createBoardGridVisualization } from "./utils/grid-visual";
+
+import { setupEnvironment, setEnvironmentQuality, updateEnvironmentAnimations } from "./rendering/environment";
+import { setupSky, updateClouds, setCloudEffectsEnabled, setSkyQuality } from './rendering/sky';
+
+import { applyIdleAnimations, createPlayerAnimator} from './game/animations/player-animator';
+
+import { GAME_RENDER_CONFIG } from './constants/rendering-parameters';
+import { setupCameraControls } from './input/camera';
+import { createGameManager } from './game/game-manager';
+import { createSettingsManager } from './game/ui/settings/settings-manager';
+import { createSettingsMenu } from './game/ui/settings/settings-menu';
+
+import { applyGameTheme } from './game/themes/game-theme';
+import { createCreditsScreen } from './game/ui/credits/credits-screen';
+import { createGameUI } from './game/ui/game-ui';
+import { createFpsCounter } from './utils/fps-counter';
+import { loadKurokaneFont } from './utils/font-loader';
+import './styles/main.css';
+import {clampValue} from "./utils/clampValue";
+import {GAME_CAMERA_CONFIG} from "./constants/camera-parameters";
+import { createTitleScreen } from './game/ui/menu/title-screen';
+
+import type { GameThemeName } from './types/theme';
+import type { CameraControls } from "./types/camera-types";
+import type {GameSettings, GraphicsQuality, SettingsManager} from "./types/settings-types";
+import type {SkyQuality} from "./types/environment-types";
 
 const scene: THREE.Scene = new THREE.Scene();
-const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth/window.innerHeight,
+    0.1,
+    1000
+);
 
-const pixelationScale = GAME_RENDER_CONFIG.pixelationScale;
+const pixelationScale: number = GAME_RENDER_CONFIG.pixelationScale;
 
 const renderer = new THREE.WebGLRenderer({ 
     antialias: GAME_RENDER_CONFIG.rendererOptions.antialias, 
-    powerPreference: GAME_RENDER_CONFIG.rendererOptions.powerPreference 
+    powerPreference: GAME_RENDER_CONFIG.rendererOptions.powerPreference
 });
 
 const pixelatedRenderTarget = new THREE.WebGLRenderTarget(1, 1);
@@ -19,12 +54,24 @@ pixelatedRenderTarget.texture.magFilter = THREE.NearestFilter;
 pixelatedRenderTarget.texture.generateMipmaps = false;
 
 const postProcessScene = new THREE.Scene();
-const postProcessCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const postProcessCamera = new THREE.OrthographicCamera(
+    -1,
+    1,
+    1,
+    -1,
+    0,
+    1
+);
 const postProcessMaterial = new THREE.ShaderMaterial({
     uniforms: {
         tDiffuse: { value: null },
         resolution: {
-            value: new THREE.Vector4(1, 1, 1, 1)
+            value: new THREE.Vector4(
+                1,
+                1,
+                1,
+                1
+            )
         }
     },
     vertexShader:
@@ -46,21 +93,27 @@ const postProcessMaterial = new THREE.ShaderMaterial({
         }
         `
 });
-const postProcessQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postProcessMaterial);
+const postProcessQuad = new THREE.Mesh(
+    new THREE.PlaneGeometry(2, 2),
+    postProcessMaterial);
 postProcessScene.add(postProcessQuad);
 
 function syncViewportSize() {
-    const viewportWidth = Math.max(1, window.innerWidth);
-    const viewportHeight = Math.max(1, window.innerHeight);
-    const renderWidth = Math.max(1, Math.floor(viewportWidth / pixelationScale));
-    const renderHeight = Math.max(1, Math.floor(viewportHeight / pixelationScale));
+    const viewportWidth: number = Math.max(1, window.innerWidth);
+    const viewportHeight: number = Math.max(1, window.innerHeight);
+    const renderWidth: number = Math.max(1, Math.floor(viewportWidth / pixelationScale));
+    const renderHeight: number = Math.max(1, Math.floor(viewportHeight / pixelationScale));
 
     camera.aspect = viewportWidth / viewportHeight;
     camera.updateProjectionMatrix();
 
-    renderer.setSize(viewportWidth, viewportHeight, false);
+    renderer.setSize(
+        viewportWidth,
+        viewportHeight,
+        false
+    );
     pixelatedRenderTarget.setSize(renderWidth, renderHeight);
-    postProcessMaterial.uniforms.resolution.value.set(
+    postProcessMaterial.uniforms.resolution!.value.set(
         renderWidth,
         renderHeight,
         1 / renderWidth,
@@ -78,13 +131,13 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-const infoDiv = document.getElementById('info');
-const fpsCounter = createFpsCounter();
+const infoDiv: HTMLDivElement = document.getElementById('info') as HTMLDivElement;
+const fpsCounter  = createFpsCounter();
 
 // create the pieces
 const worldPieces = createGamePieces();
-for (let pieceIndex = 0; pieceIndex < worldPieces.length; pieceIndex++) {
-    scene.add(worldPieces[pieceIndex]);
+for (const element of worldPieces) {
+    scene.add(element);
 }
 
 // Initialize board spaces
@@ -106,7 +159,7 @@ createPlayableSpacesVisualization(scene);
 createBoardGridVisualization(scene);
 
 // Setup camera controls
-const cameraControls = setupCameraControls(camera, scene);
+const cameraControls: CameraControls = setupCameraControls(camera, scene);
 
 // Initialize game manager for local 4-player co-op
 const gameManager = createGameManager(scene, camera, worldPieces, renderer.domElement);
@@ -115,28 +168,31 @@ const gameManager = createGameManager(scene, camera, worldPieces, renderer.domEl
 const gameUI = createGameUI(infoDiv);
 
 // Initialize settings systems
-const settingsManager = createSettingsManager();
+const settingsManager: SettingsManager = createSettingsManager();
 applyGameTheme(settingsManager.getTheme());
 const settingsMenu = createSettingsMenu(settingsManager);
 const creditsScreen = createCreditsScreen();
 
-function setSceneShadowsEnabled(enabled: boolean) {
-    renderer.shadowMap.enabled = !!enabled;
-    directionalLight.castShadow = !!enabled;
+function setSceneShadowsEnabled(enabled: boolean): void {
+    renderer.shadowMap.enabled = enabled;
+    directionalLight.castShadow = enabled;
 }
-
-function applyMasterVolume(volume: number) {
-    const vol = clampValue(volume, 0, 1);
+function applyMasterVolume(volume: number): void {
+    const vol: number = clampValue(
+        volume,
+        0,
+        1
+    );
 
     const mediaNodes = document.querySelectorAll('audio, video') as NodeListOf<HTMLMediaElement>;
-    for (let i = 0; i < mediaNodes.length; i++) mediaNodes[i].volume = vol;
+    for (const element of mediaNodes) element.volume = vol;
 
     (window as any).__GAME_MASTER_VOLUME__ = vol;
 }
 
-function applyGraphicsQuality(quality) {
-    let shadowsEnabled = quality !== 'low';
-    let effectsEnabled = quality === 'high';
+function applyGraphicsQuality(quality: SkyQuality): void {
+    let shadowsEnabled: boolean = quality !== 'low';
+    let effectsEnabled: boolean = quality === 'high';
 
     setSceneShadowsEnabled(shadowsEnabled);
 
@@ -151,8 +207,8 @@ function applyGraphicsQuality(quality) {
     }
 }
 
-function applySettings(settings) {
-    applyMasterVolume(settings.volume);
+function applySettings(settings: GameSettings): void {
+    applyMasterVolume(settings.masterVolume);
     applyGraphicsQuality(settings.graphicsQuality);
     gameManager.setGameSpeed(settings.gameSpeed);
     applyGameTheme(settings.theme);
@@ -161,16 +217,16 @@ function applySettings(settings) {
 settingsManager.subscribe(applySettings);
 applySettings(settingsManager.getAll());
 
-window.addEventListener('resize', function() {
+window.addEventListener('resize', function(): void {
     syncViewportSize();
-    applyGraphicsQuality(settingsManager.getSetting('graphicsQuality'));
+    applyGraphicsQuality(settingsManager.getGraphicsQuality());
 });
 
-settingsMenu.onVolumeChange(function(value) {
+settingsMenu.onVolumeChange(function(value: number): void {
     settingsManager.setVolume(value);
 });
 
-settingsMenu.onGraphicsChange(function(quality: string) {
+settingsMenu.onGraphicsChange(function(quality: GraphicsQuality): void {
     settingsManager.setGraphicsQuality(quality);
 });
 
@@ -216,7 +272,7 @@ titleScreen.onButton('credits', function() {
 });
 
 // Render loop
-var render = function () {
+const render = function () {
     requestAnimationFrame(render);
 
     if (!hasGameStarted) {
@@ -235,9 +291,17 @@ var render = function () {
         renderer.setRenderTarget(pixelatedRenderTarget);
         renderer.render(scene, camera);
         renderer.setRenderTarget(null);
-        postProcessMaterial.uniforms.tDiffuse.value = pixelatedRenderTarget.texture;
+        postProcessMaterial.uniforms.tDiffuse!.value = pixelatedRenderTarget.texture;
         renderer.render(postProcessScene, postProcessCamera);
-        fpsCounter.update({ renderer: renderer, gameManager: gameManager });
+        fpsCounter.update({
+            renderStats: {
+                calls: renderer.info.render.calls,
+                triangles: renderer.info.render.triangles,
+                geometries: renderer.info.memory.geometries,
+                textures: renderer.info.memory.textures
+            },
+            gameManager: gameManager
+        });
         return;
     }
 
@@ -259,19 +323,19 @@ var render = function () {
             GAME_CAMERA_CONFIG.boardLookAt.y,
             GAME_CAMERA_CONFIG.boardLookAt.z
         );
-    } else if (!gameManager.diceAnimator.isAnimating) {
+    } else if (gameManager.diceAnimator && !gameManager.diceAnimator.isAnimating) {
         cameraControls.updateCamera();
     }
 
-    if ((window as any).playerAnimator && (window as any).playerAnimator.isAnimating) {
-        var stillWalking = (window as any).playerAnimator.update();
+    if ((window as any).playerAnimator?.isAnimating) {
+        const stillWalking = (window as any).playerAnimator.update();
         if (!stillWalking) {
             (window as any).playerAnimator = null;
         }
     }
 
     // Update piece positions based on player locations (skip during animation)
-    if (!gameManager.diceAnimator.isAnimating && !gameManager.isPregame()) {
+    if (gameManager.diceAnimator && !gameManager.diceAnimator.isAnimating && !gameManager.isPregame()) {
         updateAllPiecePositions();
     }
 
@@ -284,10 +348,15 @@ var render = function () {
     renderer.setRenderTarget(pixelatedRenderTarget);
     renderer.render(scene, camera);
     renderer.setRenderTarget(null);
-    postProcessMaterial.uniforms.tDiffuse.value = pixelatedRenderTarget.texture;
+    postProcessMaterial.uniforms.tDiffuse!.value = pixelatedRenderTarget.texture;
     renderer.render(postProcessScene, postProcessCamera);
-    fpsCounter.update({ 
-        renderer: renderer, 
+    fpsCounter.update({
+        renderStats: {
+            calls: renderer.info.render.calls,
+            triangles: renderer.info.render.triangles,
+            geometries: renderer.info.memory.geometries,
+            textures: renderer.info.memory.textures
+        },
         gameManager: gameManager 
     });
 };
@@ -305,7 +374,7 @@ var render = function () {
     },
     diceAnimator: gameManager.diceAnimator,
     get isAnimating() {
-        return gameManager.diceAnimator.isAnimating;
+        return gameManager.diceAnimator?.isAnimating ?? false;
     }
 };
 
@@ -322,13 +391,12 @@ var render = function () {
     },
 
     rollDice: function(speedMultiplier: number) {
-        if (!gameManager || !gameManager.diceAnimator) {
+        if (!gameManager?.diceAnimator) {
             console.error('Dice animator not available');
             return;
         }
         gameManager.diceAnimator.setupCutscene();
         gameManager.diceAnimator.setSpeedMultiplier(speedMultiplier || 1.0);
-        gameManager.diceAnimator.startDiceRoll();
     },
 
     setIdleSpeedMultiplier: function(mult: number) {
@@ -345,9 +413,11 @@ var render = function () {
 
     resetIdlePhases: function() {
         worldPieces.forEach((piece: any) => {
-            piece.userData.idlePhase = Math.random() * Math.PI * 2;
+            piece.userData.idlePhase = Math.random() * Math.PI * 2; //NOSONAR
         });
     }
 };
+
+void loadKurokaneFont();
 
 render();

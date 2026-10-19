@@ -1,8 +1,9 @@
-const { defineConfig } = require('vitest/config');
+import { defineConfig } from 'vitest/config';
 
-module.exports = defineConfig({
+export default defineConfig({
     test: {
-        environment: 'node',
-        include: ['tests/**/*.test.ts']
+        environment: 'happy-dom',
+        include: ['tests/**/*.test.ts'],
+        globals: true
     }
 });
