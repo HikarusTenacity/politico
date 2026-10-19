@@ -1,12 +1,18 @@
-import { DebugInfo, DebugSample, DebugTheme } from '../types/debug-types';
+import type {
+    DebugInfo,
+    DebugSample,
+    DebugTheme,
+    GameManagerDebugInfo,
+    PlayerDebugSummary
+} from '../types/debug-types';
 
 function escapeDebugHtml(value: unknown) {
     return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
 function debugValueSpan(value: unknown, color: string) {
@@ -25,7 +31,7 @@ let activeDebugStatsTheme: DebugTheme = {
     playerFallback: '#B388FF'
 };
 
-function setDebugStatsTheme(themeName: string) {
+export function setDebugStatsTheme(themeName: string): boolean {
     const getGameTheme = (window as any).getGameTheme;
     if (!getGameTheme) return false;
 
@@ -38,11 +44,10 @@ function setDebugStatsTheme(themeName: string) {
     return false;
 }
 
-function getDebugPlayerColor(
-    player?: { name: string, color?: number | string }
-) {
+function getDebugPlayerColor(player: PlayerDebugSummary | null | undefined): string {
     if (!player) return activeDebugStatsTheme.playerFallback;
 
+    //idfk gemini did this
     if (typeof player.color === 'number') {
         const hex = player.color.toString(16).padStart(6, '0');
         return '#' + hex;
@@ -59,29 +64,34 @@ function getDebugPlayerColor(
     return activeDebugStatsTheme.playerFallback;
 }
 
-function formatDebugStatsColored(sample: DebugSample, debugInfo: DebugInfo) {
+export function formatDebugStatsColored(sample: DebugSample, debugInfo: DebugInfo): string {
     let lines: string[] = [];
-    const theme = activeDebugStatsTheme;
+    const theme: DebugTheme = activeDebugStatsTheme;
 
     lines.push(`FPS: ${debugValueSpan(sample.fps, theme.fps)}`);
-    lines.push(`FT: ${debugValueSpan(sample.frameMs.toFixed(1) + 'ms', theme.frameTime)} / ${debugValueSpan(sample.maxFrameMs.toFixed(1) + 'ms', theme.maxFrameTime)}`);
+    lines.push(`FT: ${debugValueSpan(sample.frameMs.toFixed(1) + 'ms', theme.frameTime)} / ${debugValueSpan(sample.maxFrameMs.toFixed(1) + 'ms', theme.maxFrameTime)}`); //NOSONAR
 
-    if (debugInfo?.renderer?.info) {
-        const renderInfo = debugInfo.renderer.info.render;
-        const memInfo = debugInfo.renderer.info.memory;
+    if (debugInfo.renderStats) {
+        const renderStats = debugInfo.renderStats;
 
-        lines.push(`DC: ${debugValueSpan(renderInfo.calls, theme.drawCalls)} TRI: ${debugValueSpan(renderInfo.triangles, theme.triangles)}`);
-        lines.push(`GEO: ${debugValueSpan(memInfo.geometries, theme.geometries)} TEX: ${debugValueSpan(memInfo.textures, theme.textures)}`);
+        lines.push(
+            `DC: ${debugValueSpan(renderStats.calls, theme.drawCalls)} 
+            TRI: ${debugValueSpan(renderStats.triangles, theme.triangles)}`,
+            `GEO: ${debugValueSpan(renderStats.geometries, theme.geometries)} 
+            TEX: ${debugValueSpan(renderStats.textures, theme.textures)}`
+        );
     }
 
     if (debugInfo?.gameManager) {
-        const gm = debugInfo?.gameManager;
-        const currentPlayer = gm?.getCurrentPlayer?.();
-        const playerName = currentPlayer?.name ?? 'N/A';
-        const playerColor = getDebugPlayerColor(currentPlayer);
+        const gameManager: GameManagerDebugInfo = debugInfo?.gameManager;
+        const currentPlayer: PlayerDebugSummary | null | undefined = gameManager?.getCurrentPlayer?.();
+        const playerName: string = currentPlayer?.name ?? 'N/A';
+        const playerColor: string = getDebugPlayerColor(currentPlayer);
 
-        lines.push(`GAMESTATE: ${debugValueSpan(gm.gameState, theme.gameState)}`);
-        lines.push(`PLAYER: ${debugValueSpan(playerName, playerColor)}`);
+        lines.push(
+            `GAMESTATE: ${debugValueSpan(gameManager.gameState, theme.gameState)}`,
+            `PLAYER: ${debugValueSpan(playerName, playerColor)}`
+        );
     }
 
     return lines.join('\n');

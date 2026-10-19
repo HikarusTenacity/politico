@@ -1,4 +1,9 @@
-import {GameTheme, GameThemeName} from "../../types/theme";
+import type {GameTheme, GameThemeName} from "../../types/theme";
+import {setSkyTheme} from "../../rendering/sky";
+import { setDebugStatsTheme } from "../../utils/debug-stats-formatter";
+import {setBoardTheme} from "../../utils/grid-visual";
+import {setEnvironmentTheme} from "../../rendering/environment";
+import {setPlayerFallbackColors} from "../ui/player-corner-panel";
 
 export const GAME_THEME_PRESETS: Record<GameThemeName, GameTheme> = {
     default: {
@@ -280,12 +285,12 @@ function setThemeCssVars(theme: GameTheme) {
 
     root.dataset.gameTheme = theme.name;
     if (body) {
-        body.dataset['data-game-theme'] = theme.name;
+        body.dataset.gameTheme = theme.name;
     }
     Object.keys(theme.cssVars).forEach(function(key: string): void {
         root.style.setProperty(
             key,
-            theme.cssVars[key]
+            theme.cssVars[key] ?? ''
         );
     });
 }

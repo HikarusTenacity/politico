@@ -1,5 +1,5 @@
 import { BOARD_SPACES } from './board-layout';
-import { BoardSpace, BoardBounds, SpaceType } from '../../types/board-types';
+import type {BoardSpace, BoardBounds, SpaceType} from '../../types/board-types';
 
 /**
  * Gets board space by id, returns null if invalid id
@@ -7,9 +7,13 @@ import { BoardSpace, BoardBounds, SpaceType } from '../../types/board-types';
  * @returns BoardSpace | null
  */
 export function getSpaceById(spaceId: number): BoardSpace | null {
-    return (spaceId >= 0 && spaceId < BOARD_SPACES.length)
-        ? BOARD_SPACES[spaceId] :
-        null;
+    if (!Number.isInteger(spaceId) ||
+        spaceId < 0 ||
+        spaceId >= BOARD_SPACES.length
+    ) {
+        return null;
+    }
+    return BOARD_SPACES[spaceId] ?? null;
 }
 
 /**
@@ -18,10 +22,16 @@ export function getSpaceById(spaceId: number): BoardSpace | null {
  * @param worldZ
  * @returns spaceId | null
  */
-export function getSpaceIdFromCoordinates(worldX: number, worldZ: number): number | null {
+export function getSpaceIdFromCoordinates(
+    worldX: number, worldZ: number): number | null {
+    if (!Number.isFinite(worldX) || !Number.isFinite(worldZ)) {
+        return null;
+    }
     for (let id = 0; id < BOARD_SPACES.length; id++) {
         const space = BOARD_SPACES[id];
-        const bounds = space.bounds;
+        if (!space) continue;
+
+        const bounds: BoardBounds = space.bounds;
         if (worldX >= bounds.xMin && worldX < bounds.xMax &&
             worldZ >= bounds.zMin && worldZ < bounds.zMax) {
             return id;
@@ -35,7 +45,7 @@ export function getSpaceIdFromCoordinates(worldX: number, worldZ: number): numbe
  * @param spaceId
  */
 export function getSpaceBounds(spaceId: number): BoardBounds | null {
-    const space = getSpaceById(spaceId);
+    const space: BoardSpace | null = getSpaceById(spaceId);
     return space?.bounds ?? null;
 }
 
@@ -44,7 +54,7 @@ export function getSpaceBounds(spaceId: number): BoardBounds | null {
  * @param spaceId
  */
 export function getSpaceName(spaceId: number): string | null {
-    let space = getSpaceById(spaceId);
+    const space: BoardSpace | null = getSpaceById(spaceId);
     return space?.name ?? null;
 }
 

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { CameraControls } from '../types/camera-types';
-import {GAME_CAMERA_CONFIG, MAX_CAMERA_DISTANCE} from '../constants/camera';
+import type { CameraControls } from '../types/camera-types';
+import {GAME_CAMERA_CONFIG, MAX_CAMERA_DISTANCE} from '../constants/camera-parameters';
 import {clampValue} from "../utils/clampValue";
 
 // Camera controls and management
-function setupCameraControls(camera: THREE.PerspectiveCamera, scene: THREE.Scene): CameraControls {
+export function setupCameraControls(camera: THREE.PerspectiveCamera, scene: THREE.Scene): CameraControls {
     camera.position.set(
         GAME_CAMERA_CONFIG.defaultPosition.x,
         GAME_CAMERA_CONFIG.defaultPosition.y,

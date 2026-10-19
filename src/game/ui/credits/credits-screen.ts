@@ -49,7 +49,15 @@ export function createCreditsScreen(): {
     root.appendChild(panel);
     document.body.appendChild(root);
 
-    const screen = {
+    const screen: {
+        root: HTMLDivElement;
+        viewport: HTMLDivElement;
+        track: HTMLDivElement;
+        scrollTimer: number | null;
+        isVisible: boolean;
+        show(): void;
+        hide(): void;
+    } = {
         root: root,
         viewport: viewport,
         track: track,
@@ -66,7 +74,7 @@ export function createCreditsScreen(): {
                 clearInterval(this.scrollTimer);
             }
 
-            this.scrollTimer = setInterval(function() {
+            this.scrollTimer = setInterval(function(): void {
                 if (!self.isVisible) return;
 
                 self.viewport.scrollTop += 1;
@@ -76,7 +84,7 @@ export function createCreditsScreen(): {
                 }
             }, 22);
         },
-        hide: function() {
+        hide: function(): void {
             if (this.scrollTimer) {
                 clearInterval(this.scrollTimer);
                 this.scrollTimer = null;
@@ -86,15 +94,15 @@ export function createCreditsScreen(): {
         }
     };
 
-    closeButton.addEventListener('click', function() {
+    closeButton.addEventListener('click', function(): void {
         screen.hide();
     });
 
-    root.addEventListener('click', function(event) {
+    root.addEventListener('click', function(event: MouseEvent): void {
         if (event.target === root) screen.hide();
     });
 
-    window.addEventListener('keydown', function(event) {
+    window.addEventListener('keydown', function(event: KeyboardEvent): void {
         if (event.code === 'Escape' && screen.isVisible) {
             event.preventDefault();
             screen.hide();

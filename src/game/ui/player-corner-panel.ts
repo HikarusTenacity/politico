@@ -1,13 +1,39 @@
 // Player corner panels - displays player info and 3D portrait in corners
-var playerCornerPanels = {
+import * as THREE from 'three';
+import {createGuy} from '../models/characters/guy';
+import {MAX_PLAYER_BUFF_SLOTS, PLAYERS} from '../actors/players/player-manager';
+import type {GameManager} from '../../types/game-manager-types';
+import type {PlayerState} from '../../types/player-types';
+
+interface CornerPanel {
+    panel: HTMLDivElement;
+    header: HTMLDivElement;
+    portrait: HTMLSpanElement;
+    name: HTMLSpanElement;
+    characterLine: HTMLDivElement;
+    currencyLine: HTMLDivElement;
+    buffsLine: HTMLDivElement;
+}
+
+interface PortraitViewport {
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    rimLight: THREE.PointLight;
+    model: THREE.Group | null;
+    sourcePiece: THREE.Group | null;
+    baseY: number;
+}
+
+export const playerCornerPanels = {
     cornerPositions: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
     fallbackGuyColors: ['red', 'green', 'blue', 'yellow'],
     portraitWidth: 100,
     portraitHeight: 100,
-    cornerPanels: [],
-    portraitViewports: [],
+    cornerPanels: [] as CornerPanel[],
+    portraitViewports: [] as (PortraitViewport | undefined)[],
 
-    createCornerPanels: function() {
+    createCornerPanels: function(): void {
         this.destroyCornerPanels();
 
         for (var i = 0; i < 4; i++) {
@@ -56,7 +82,7 @@ var playerCornerPanels = {
         }
     },
 
-    createPortraitViewport: function(index) {
+    createPortraitViewport: function(index: number): void {
         if (typeof THREE === 'undefined' || !this.cornerPanels[index]) return;
 
         var portraitHost = this.cornerPanels[index].portrait;
@@ -96,20 +122,21 @@ var playerCornerPanels = {
         };
     },
 
-    getPortraitModelForPlayer: function(player, index) {
-        var model;
+    getPortraitModelForPlayer: function(player: PlayerState, index: number): THREE.Group {
+        var model: THREE.Group;
 
         if (player.piece) {
             model = player.piece.clone(true);
         } else {
-            model = createGuy(this.fallbackGuyColors[index % this.fallbackGuyColors.length]);
+            const fallbackColor = this.fallbackGuyColors[index % this.fallbackGuyColors.length];
+            model = createGuy(fallbackColor ?? 'white');
         }
 
         model.position.set(0, 0, 0);
         model.rotation.set(0, 0, 0);
 
-        model.traverse(function(node) {
-            if (node.isMesh) {
+        model.traverse(function(node: THREE.Object3D): void {
+            if (node instanceof THREE.Mesh) {
                 node.castShadow = false;
                 node.receiveShadow = false;
             }
@@ -136,13 +163,13 @@ var playerCornerPanels = {
         return model;
     },
 
-    setFallbackGuyColors: function(colors: string[]) {
+    setFallbackGuyColors: function(colors: string[]): void {
         if (Array.isArray(colors) && colors.length) {
             this.fallbackGuyColors = colors.slice();
         }
     },
 
-    updatePortraitViewport: function(player, index, isCurrentTurn) {
+    updatePortraitViewport: function(player: PlayerState, index: number, isCurrentTurn: boolean): void {
         var viewport = this.portraitViewports[index];
         if (!viewport) {
             return;
@@ -166,7 +193,7 @@ var playerCornerPanels = {
         viewport.renderer.render(viewport.scene, viewport.camera);
     },
 
-    destroyCornerPanels: function() {
+    destroyCornerPanels: function(): void {
         for (var r = 0; r < this.portraitViewports.length; r++) {
             var viewport = this.portraitViewports[r];
             if (!viewport) {
@@ -185,7 +212,9 @@ var playerCornerPanels = {
         this.portraitViewports = [];
 
         for (var i = 0; i < this.cornerPanels.length; i++) {
-            var panel = this.cornerPanels[i].panel;
+            const panelData = this.cornerPanels[i];
+            if (!panelData) continue;
+            var panel = panelData.panel;
             if (panel && panel.parentNode) {
                 panel.parentNode.removeChild(panel);
             }
@@ -193,15 +222,19 @@ var playerCornerPanels = {
         this.cornerPanels = [];
     },
 
-    updateCornerPanels: function(gameManager) {
-        for (var i = 0; i < PLAYERS.length && i < this.cornerPanels.length; i++) {
-            var player = PLAYERS[i];
-            var panelData = this.cornerPanels[i];
-            var panel = panelData.panel;
-            var playerColor = '#' + player.color.toString(16).padStart(6, '0');
-            var isCurrentTurn = !gameManager.isPregame() && gameManager.currentPlayerIndex === i;
-            var buffsCount = player.buffs ? player.buffs.length : 0;
-            var pieceLabel = player.pieceType ? player.pieceType : 'Unselected';
+    updateCornerPanels: function(gameManager: GameManager): void {
+        for (let i = 0; i < PLAYERS.length && i < this.cornerPanels.length; i++) {
+            const player = PLAYERS[i];
+            if (!player || !this.cornerPanels[i]) {
+                continue;
+            }
+            const panelData = this.cornerPanels[i];
+            if (!panelData) continue;
+            const panel = panelData.panel;
+            const playerColor: string = '#' + player.color.toString(16).padStart(6, '0');
+            const isCurrentTurn: boolean = !gameManager.isPregame() && gameManager.currentPlayerIndex === i;
+            const buffsCount: number = player.buffs ? player.buffs.length : 0;
+            const pieceLabel: string = player.pieceType ? player.pieceType : 'Unselected';
 
             panel.className = 'player-corner ' + this.cornerPositions[i] + (isCurrentTurn ? ' active-turn' : '');
             panelData.header.style.color = playerColor;
@@ -216,6 +249,6 @@ var playerCornerPanels = {
     }
 };
 
-function setPlayerFallbackColors(colors: string[]) {
+export function setPlayerFallbackColors(colors: string[]): void {
     playerCornerPanels.setFallbackGuyColors(colors);
 }

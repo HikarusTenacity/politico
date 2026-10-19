@@ -1,22 +1,12 @@
-const { defineConfig } = require('vite');
+import { defineConfig } from 'vite';
 
-module.exports = defineConfig({
+export default defineConfig({
   server: {
-    watch: {
-      ignored: ['!**/public/game.bundle.js']
-    }
+    port: 5173,
+    open: true
   },
-  plugins: [
-    {
-      name: 'reload-on-game-bundle-change',
-      configureServer(server) {
-        server.watcher.add('public/game.bundle.js');
-        server.watcher.on('change', (file) => {
-          if (file.endsWith('public/game.bundle.js')) {
-            server.ws.send({ type: 'full-reload' });
-          }
-        });
-      }
-    }
-  ]
+  build: {
+    outDir: 'dist',
+    sourcemap: true
+  }
 });

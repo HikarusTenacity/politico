@@ -1,6 +1,6 @@
-import {ButtonColor, LocalMultiplayerInput} from "../types/input";
+import type {ButtonColor, LocalMultiplayerInput} from "../types/input";
 
-function createLocalMultiplayerInput() {
+export function createLocalMultiplayerInput() {
     const bcolors = {
         green:  { bg: 'var(--theme-action-green-bg)', border: 'var(--theme-action-green-border)', shadow: 'var(--theme-action-green-shadow)' },
         blue:   { bg: 'var(--theme-action-blue-bg)', border: 'var(--theme-action-blue-border)', shadow: 'var(--theme-action-blue-shadow)' },

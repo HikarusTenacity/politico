@@ -11,8 +11,9 @@ import { PIECE_CONFIGS } from "../../../constants/piece-parameters";
  *
  */
 
-export function createGamePieces(): THREE.Mesh[] {
-    let pieces: THREE.Mesh[] = [];
+
+export function createGamePieces(): THREE.Group[] {
+    let pieces: THREE.Group[] = [];
     const sharedSize = 1.4;
     const groundY = -1.0;
 

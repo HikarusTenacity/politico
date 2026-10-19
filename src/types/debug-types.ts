@@ -18,7 +18,7 @@ export interface PlayerDebugSummary {
 
 export interface GameManagerDebugInfo {
     gameState: string;
-    getCurrentPlayer?(): PlayerDebugSummary | null;
+    getCurrentPlayer?(): PlayerDebugSummary | null | undefined;
 }
 
 export interface DebugInfo {
@@ -37,4 +37,8 @@ export interface DebugTheme {
     textures: string;
     gameState: string;
     playerFallback: string;
+}
+
+export interface FpsSampler {
+    tick(now: number): DebugSample | null;
 }

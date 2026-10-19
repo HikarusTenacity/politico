@@ -8,7 +8,7 @@ import * as RenderParams from '../../constants/rendering-parameters';
  * @param width
  * @param height
  */
-function createMountain(x: number, z: number, width: number, height: number) {
+function createMountain(x: number, z: number, width: number, height: number): THREE.Group {
     const mountain = new THREE.Group();
     const mountainConfig = RenderParams.MOUNTAIN;
 
@@ -49,8 +49,9 @@ function createMountain(x: number, z: number, width: number, height: number) {
 
 /**
  * Creates a ring of mountains around the center
+ * @param scene
  */
-export function createMountains(): THREE.Group[] {
+export function createMountains(scene: THREE.Scene): THREE.Group[] {
     let mountains: THREE.Group[] = [];
     const mountainConfig = RenderParams.MOUNTAIN;
 
@@ -71,22 +72,34 @@ export function createMountains(): THREE.Group[] {
      * @param z
      */
     const createRandomMountain = (x: number, z: number): THREE.Group => {
-        const width = mountainConfig.ring.widthBase + (Math.random() * mountainConfig.ring.widthRange);
-        const height = mountainConfig.ring.heightBase + (Math.random() * mountainConfig.ring.heightRange);
+        const width = mountainConfig.ring.widthBase + (Math.random() * mountainConfig.ring.widthRange); //nosonar
+        const height = mountainConfig.ring.heightBase + (Math.random() * mountainConfig.ring.heightRange); //nosonar
         return createMountain(x, z, width, height);
     };
 
     for (let i = 0; i < 5; i++) {
-        spawnMountain((i-1) * mountainConfig.ring.halfDistance, -mountainConfig.ring.distance);
+        spawnMountain(
+            (i-1) * mountainConfig.ring.halfDistance,
+            -mountainConfig.ring.distance
+        );
     }
     for (let i = 0; i < 5; i++) {
-        spawnMountain((i-1) * mountainConfig.ring.halfDistance, mountainConfig.ring.distance);
+        spawnMountain(
+            (i-1) * mountainConfig.ring.halfDistance,
+            mountainConfig.ring.distance
+        );
     }
     for (let i = 0; i < 5; i++) {
-        spawnMountain(mountainConfig.ring.distance, (i-1) * mountainConfig.ring.halfDistance);
+        spawnMountain(
+            mountainConfig.ring.distance,
+            (i-1) * mountainConfig.ring.halfDistance
+        );
     }
     for (let i = 0; i < 5; i++) {
-        spawnMountain(-mountainConfig.ring.distance, (i-1) * mountainConfig.ring.halfDistance);
+        spawnMountain(
+            -mountainConfig.ring.distance,
+            (i-1) * mountainConfig.ring.halfDistance
+        );
     }
 
     return mountains;

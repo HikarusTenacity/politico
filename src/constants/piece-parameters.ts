@@ -1,4 +1,4 @@
-import {PieceConfig} from "../types/piece-types";
+import type {PieceConfig} from "../types/piece-types";
 
 
 export const PIECE_CONFIGS: PieceConfig[] =

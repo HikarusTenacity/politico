@@ -1,16 +1,33 @@
 // Settings Menu UI
-import {GRAPHICS_OPTIONS, QUALITY_VALUES} from "../../../constants/ui-constants";
-import {Option} from "../../../types/ui-types";
+import {GRAPHICS_OPTIONS, QUALITY_VALUES} from "../../../constants/ui-parameters";
+import type {Option} from "../../../types/ui-types";
+import type {GraphicsQuality, SettingsManager} from "../../../types/settings-types";
+import type {GameThemeName} from "../../../types/theme";
 
-function createSettingsMenu(settingsManager: SettingsManager) {
-    type SettingSection = HTMLDivElement & {
-        volumeSlider?: HTMLInputElement;
-        volumeValue?: HTMLSpanElement;
-        graphicsButtons?: HTMLButtonElement[];
-        speedSlider?: HTMLInputElement;
-        speedValue?: HTMLSpanElement;
-        themeButtons?: HTMLButtonElement[];
-    };
+type SettingSection = HTMLDivElement & {
+    controls: HTMLDivElement;
+    volumeSlider: HTMLInputElement;
+    volumeValue: HTMLSpanElement;
+    graphicsButtons: HTMLButtonElement[];
+    speedSlider: HTMLInputElement;
+    speedValue: HTMLSpanElement;
+    themeButtons: HTMLButtonElement[];
+};
+
+interface SettingsMenu {
+    root: HTMLDivElement;
+    isVisible: boolean;
+    show(): void;
+    hide(): void;
+    onClose(callback: () => void): void;
+    onReset(callback: () => void): void;
+    onVolumeChange(callback: (value: number) => void): void;
+    onGraphicsChange(callback: (value: GraphicsQuality) => void): void;
+    onThemeChange(callback: (value: GameThemeName) => void): void;
+    onGameSpeedChange(callback: (value: number) => void): void;
+}
+
+export function createSettingsMenu(settingsManager: SettingsManager): SettingsMenu {
     const root: HTMLDivElement = document.createElement('div');
     root.className = 'settings-overlay';
     root.classList.add('hidden');
@@ -42,23 +59,28 @@ function createSettingsMenu(settingsManager: SettingsManager) {
     const volumeSection = createSettingSection('Master Volume', 'volume') as SettingSection;
     volumeSection.volumeSlider = createVolumeSlider('volume', settingsManager.getVolume() * 100);
     volumeSection.volumeValue = createValueLabel(Math.round(settingsManager.getVolume() * 100) + '%');
-    volumeSection.appendChild(volumeSection.volumeSlider);
-    volumeSection.appendChild(volumeSection.volumeValue);
+    volumeSection.controls.appendChild(volumeSection.volumeSlider);
+    volumeSection.controls.appendChild(volumeSection.volumeValue);
     content.appendChild(volumeSection);
 
     //graphic quality
-    const graphicsSection = createSettingSection('Graphics Quality', 'graphics-quality') as SettingSection;
-    const currentQuality: String = settingsManager.getGraphicsQuality();
+    const graphicsSection = createSettingSection(
+        'Graphics Quality',
+        'graphics-quality'
+    ) as SettingSection;
+    const currentQuality: string = settingsManager.getGraphicsQuality();
     graphicsSection.graphicsButtons = [];
     
     GRAPHICS_OPTIONS.forEach(function(label: string, index: number): void {
-        const btn: HTMLButtonElement = createOptionButton(label, QUALITY_VALUES[index] === currentQuality);
-        btn.value = QUALITY_VALUES[index];
-        if (QUALITY_VALUES[index] === currentQuality) {
+        const quality = QUALITY_VALUES[index];
+        if (!quality) return;
+        const btn: HTMLButtonElement = createOptionButton(label, quality === currentQuality);
+        btn.value = quality;
+        if (quality === currentQuality) {
             btn.classList.add('selected');
         }
         graphicsSection.graphicsButtons.push(btn);
-        graphicsSection.appendChild(btn);
+        graphicsSection.controls.appendChild(btn);
     });
     content.appendChild(graphicsSection);
 
@@ -79,31 +101,31 @@ function createSettingsMenu(settingsManager: SettingsManager) {
             btn.classList.add('selected');
         }
         themeSection.themeButtons.push(btn);
-        themeSection.appendChild(btn);
+        themeSection.controls.appendChild(btn);
     });
     content.appendChild(themeSection);
 
     // Game Speed Control
-    var gameSpeedSection = createSettingSection('Game Speed', 'game-speed') as SettingSection;
+    const gameSpeedSection = createSettingSection('Game Speed', 'game-speed') as SettingSection;
     gameSpeedSection.speedSlider = createGameSpeedSlider('game-speed', settingsManager.getGameSpeed());
     gameSpeedSection.speedValue = createValueLabel((settingsManager.getGameSpeed() * 100).toFixed(0) + '%');
-    gameSpeedSection.appendChild(gameSpeedSection.speedSlider);
-    gameSpeedSection.appendChild(gameSpeedSection.speedValue);
+    gameSpeedSection.controls.appendChild(gameSpeedSection.speedSlider);
+    gameSpeedSection.controls.appendChild(gameSpeedSection.speedValue);
     content.appendChild(gameSpeedSection);
 
     settingsPanel.appendChild(content);
 
     // Button bar
-    var buttonBar = document.createElement('div');
+    const buttonBar: HTMLDivElement = document.createElement('div');
     buttonBar.className = 'settings-button-bar';
 
-    var resetButton = document.createElement('button');
+    const resetButton: HTMLButtonElement = document.createElement('button');
     resetButton.className = 'settings-button settings-reset-btn';
     resetButton.type = 'button';
     resetButton.textContent = 'Reset to Defaults';
     buttonBar.appendChild(resetButton);
 
-    var applyButton = document.createElement('button');
+    const applyButton: HTMLButtonElement = document.createElement('button');
     applyButton.className = 'settings-button settings-apply-btn';
     applyButton.type = 'button';
     applyButton.textContent = 'Close';
@@ -114,27 +136,27 @@ function createSettingsMenu(settingsManager: SettingsManager) {
     root.appendChild(settingsPanel);
     document.body.appendChild(root);
 
-    root.addEventListener('click', function(event) {
+    root.addEventListener('click', function(event: MouseEvent): void {
         if (event.target === root) {
             closeButton.click();
         }
     });
 
-    return {
+    const menu: SettingsMenu = {
         root: root,
         isVisible: false,
 
-        show: function() {
+        show: function(): void {
             this.root.classList.remove('hidden');
             this.isVisible = true;
         },
 
-        hide: function() {
+        hide: function(): void {
             this.root.classList.add('hidden');
             this.isVisible = false;
         },
 
-        onClose: function(callback) {
+        onClose: function(callback: () => void): void {
             if (typeof callback !== 'function') {
                 return;
             }
@@ -142,9 +164,8 @@ function createSettingsMenu(settingsManager: SettingsManager) {
             applyButton.addEventListener('click', callback);
             
             // Also close on ESC key
-            var self = this;
-            var escHandler = function(event) {
-                if (event.code === 'Escape' && self.isVisible) {
+            const escHandler = function(event: KeyboardEvent): void {
+                if (event.code === 'Escape' && menu.isVisible) {
                     event.preventDefault();
                     callback();
                 }
@@ -156,17 +177,17 @@ function createSettingsMenu(settingsManager: SettingsManager) {
             if (typeof callback !== 'function') {
                 return;
             }
-            resetButton.addEventListener('click', function() {
+            resetButton.addEventListener('click', function(): void {
                 if (confirm('Reset all settings to defaults?')) {
                     callback();
                     // Update UI after reset
                     volumeSection.volumeSlider.value = String(settingsManager.getVolume() * 100);
                     volumeSection.volumeValue.textContent = Math.round(settingsManager.getVolume() * 100) + '%';
                     
-                    gameSpeedSection.speedSlider.value = settingsManager.getGameSpeed();
+                    gameSpeedSection.speedSlider.value = String(settingsManager.getGameSpeed());
                     gameSpeedSection.speedValue.textContent = (settingsManager.getGameSpeed() * 100).toFixed(0) + '%';
                     
-                    var newQuality = settingsManager.getGraphicsQuality();
+                    const newQuality: GraphicsQuality = settingsManager.getGraphicsQuality();
                     graphicsSection.graphicsButtons.forEach(function(btn) {
                         btn.classList.remove('selected');
                         if (btn.value === newQuality) {
@@ -187,97 +208,98 @@ function createSettingsMenu(settingsManager: SettingsManager) {
             if (typeof callback !== 'function') {
                 return;
             }
-            volumeSection.volumeSlider.addEventListener('input', function(e: any) {
-                var value = parseFloat(e.target.value) / 100;
-                volumeSection.volumeValue.textContent = e.target.value + '%';
+            volumeSection.volumeSlider.addEventListener('input', function(e: Event): void {
+                const target = e.currentTarget;
+                if (!(target instanceof HTMLInputElement)) return;
+                const value: number = Number.parseFloat(target.value) / 100;
+                volumeSection.volumeValue.textContent = target.value + '%';
                 callback(value);
             });
         },
 
-        onGraphicsChange: function(callback) {
+        onGraphicsChange: function(callback: (value: GraphicsQuality) => void): void {
             if (typeof callback !== 'function') {
                 return;
             }
-            graphicsSection.graphicsButtons.forEach(function(btn) {
+            graphicsSection.graphicsButtons.forEach(function(btn: HTMLButtonElement): void {
                 btn.addEventListener('click', function() {
-                    graphicsSection.graphicsButtons.forEach(function(b) {
+                    graphicsSection.graphicsButtons.forEach(function(b: HTMLButtonElement): void {
                         b.classList.remove('selected');
                     });
                     btn.classList.add('selected');
-                    callback(btn.value);
+                    if (btn.value === 'low' || btn.value === 'medium' || btn.value === 'high') {
+                        callback(btn.value);
+                    }
                 });
             });
         },
 
-        onThemeChange: function(callback) {
+        onThemeChange: function(callback: (value: GameThemeName) => void): void {
             if (typeof callback !== 'function') {
                 return;
             }
-            themeSection.themeButtons.forEach(function(btn) {
+            themeSection.themeButtons.forEach(function(btn: HTMLButtonElement): void {
                 btn.addEventListener('click', function() {
-                    themeSection.themeButtons.forEach(function(b) {
+                    themeSection.themeButtons.forEach(function(b: HTMLButtonElement): void {
                         b.classList.remove('selected');
                     });
                     btn.classList.add('selected');
-                    callback(btn.value);
+                    if (btn.value === 'default' || btn.value === 'colorblind' || btn.value === 'monochrome') {
+                        callback(btn.value);
+                    }
                 });
             });
         },
 
-        onGameSpeedChange: function(callback) {
+        onGameSpeedChange: function(callback: (value: number) => void): void {
             if (typeof callback !== 'function') {
                 return;
             }
-            gameSpeedSection.speedSlider.addEventListener('input', function(e: any) {
-                var value = parseFloat(e.target.value);
+            gameSpeedSection.speedSlider.addEventListener('input', function(e: Event): void {
+                const target = e.currentTarget;
+                if (!(target instanceof HTMLInputElement)) return;
+                const value: number = Number.parseFloat(target.value);
                 gameSpeedSection.speedValue.textContent = (value * 100).toFixed(0) + '%';
                 callback(value);
             });
         },
     };
+    return menu;
 }
 
 // Helper function to create a settings section
-function createSettingSection(labelText: string, dataValue?: string) {
-    var section = document.createElement('div');
+function createSettingSection(labelText: string, dataValue?: string): HTMLDivElement {
+    const section = document.createElement('div') as SettingSection;
     section.className = 'settings-section';
     if (dataValue) {
         section.dataset.setting = dataValue;
     }
 
-    var label = document.createElement('label');
+    const label: HTMLLabelElement = document.createElement('label');
     label.className = 'settings-label';
     label.textContent = labelText;
     section.appendChild(label);
 
-    var controlsDiv = document.createElement('div');
+    const controlsDiv: HTMLDivElement = document.createElement('div');
     controlsDiv.className = 'settings-controls';
     section.appendChild(controlsDiv);
-
-    // Override appendChild to add to controlsDiv instead
-    var originalAppend = section.appendChild.bind(section);
-    (section as any).appendChild = function(element: Node) {
-        if (element === controlsDiv || element === label) {
-            return originalAppend(element);
-        }
-        return controlsDiv.appendChild(element);
-    };
+    section.controls = controlsDiv;
 
     return section;
 }
 
 // Helper function to create volume slider
-function createVolumeSlider(id, initialValue) {
-    var container = document.createElement('div');
+function createVolumeSlider(id: string, initialValue: number): HTMLInputElement {
+    const container: HTMLDivElement = document.createElement('div');
     container.className = 'slider-container';
 
-    var slider = document.createElement('input');
+    const slider: HTMLInputElement = document.createElement('input');
     slider.type = 'range';
     slider.id = id;
     slider.className = 'settings-slider';
     slider.min = '0';
     slider.max = '100';
-    slider.value = initialValue;
+    slider.value = String(initialValue);
     slider.step = '5';
 
     container.appendChild(slider);
@@ -285,34 +307,30 @@ function createVolumeSlider(id, initialValue) {
 }
 
 // Helper function to create game speed slider
-function createGameSpeedSlider(id, initialValue) {
-    var container = document.createElement('div');
-    container.className = 'slider-container';
-
-    var slider = document.createElement('input');
+function createGameSpeedSlider(id: string, initialValue: number): HTMLInputElement {
+    const slider: HTMLInputElement = document.createElement('input');
     slider.type = 'range';
     slider.id = id;
     slider.className = 'settings-slider';
     slider.min = '0.5';
     slider.max = '2.0';
-    slider.value = initialValue;
+    slider.value = String(initialValue);
     slider.step = '0.1';
 
-    container.appendChild(slider);
     return slider;
 }
 
 // Helper function to create value label
-function createValueLabel(text) {
-    var label = document.createElement('span');
+function createValueLabel(text: string): HTMLSpanElement {
+    const label: HTMLSpanElement = document.createElement('span');
     label.className = 'settings-value-label';
     label.textContent = text;
     return label;
 }
 
 // Helper function to create option button
-function createOptionButton(label, isSelected) {
-    var btn = document.createElement('button');
+function createOptionButton(label: string, isSelected: boolean): HTMLButtonElement {
+    const btn: HTMLButtonElement = document.createElement('button');
     btn.className = 'settings-option-btn';
     btn.type = 'button';
     btn.textContent = label;

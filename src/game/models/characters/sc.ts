@@ -26,9 +26,9 @@ function createArrow(rot: number): THREE.Group {
         })
     );
     arrowBackSegment.position.set(
-        segmentConfig.x,
-        segmentConfig.y,
-        segmentConfig.z
+        segmentConfig.x ?? 0,
+        segmentConfig.y ?? 0,
+        segmentConfig.z ?? 0
     );
     arrowBackSegment.castShadow = RenderParams.SYMBOL.castsShadow;
     arrow.add(arrowBackSegment);
@@ -42,9 +42,9 @@ function createArrow(rot: number): THREE.Group {
         })
     );
     arrowFrontSegment.position.set(
-        segmentConfig.x,
-        segmentConfig.y,
-        segmentConfig.z
+        segmentConfig.x ?? 0,
+        segmentConfig.y ?? 0,
+        segmentConfig.z ?? 0
     );
     arrowFrontSegment.rotation.z = arrowAngle;
     arrowFrontSegment.castShadow = RenderParams.SYMBOL.castsShadow;
@@ -59,9 +59,9 @@ function createArrow(rot: number): THREE.Group {
         })
     );
     arrowTipLeftSegment.position.set(
-        segmentConfig.leftX,
-        segmentConfig.leftY,
-        segmentConfig.leftZ
+        segmentConfig.leftX ?? 0,
+        segmentConfig.leftY ?? 0,
+        segmentConfig.leftZ ?? 0
     );
     arrowTipLeftSegment.rotation.z = arrowAngle;
     arrowTipLeftSegment.castShadow = RenderParams.SYMBOL.castsShadow;
@@ -75,9 +75,9 @@ function createArrow(rot: number): THREE.Group {
         })
     );
     arrowTipRightSegment.position.set(
-        segmentConfig.rightX,
-        segmentConfig.rightY,
-        segmentConfig.rightZ
+        segmentConfig.rightX ?? 0,
+        segmentConfig.rightY ?? 0,
+        segmentConfig.rightZ ?? 0
     );
     arrowTipRightSegment.rotation.z = arrowAngle;
     arrowTipRightSegment.castShadow = RenderParams.SYMBOL.castsShadow;

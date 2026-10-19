@@ -1,36 +1,31 @@
 {
-  "name": "threejs-testing",
-  "version": "1.0.0",
-  "description": "Red - National Rifle Association (the letter \"A\") Green - Mental Health Liason Group (ribbon) Blue - Sierra Club (recycling) Yellow - American Energy Alliance (lightning)",
-  "main": "index.js",
+  "name": "politico",
+  "version": "0.1.0",
+  "description": "A 3D educational board game simulating legislative PAC allocations and interest group game theory.",
+  "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n TSC,VITE -c cyan,green \"npm:dev:watch\" \"npm:dev:serve\"",
-    "dev:watch": "tsc -p tsconfig.bundle.json --watch --preserveWatchOutput",
-    "dev:serve": "vite",
-    "build": "npm run build:game && vite build",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build:game": "tsc -p tsconfig.bundle.json",
-    "clean:js": "find js -type f -name '*.js' ! -path 'js/lib/*' -delete",
-    "checkjs": "npm run typecheck",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/HikarusTenacity/threejs-testing.git"
+    "url": "git+https://github.com/HikarusTenacity/politico.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/HikarusTenacity/threejs-testing/issues"
+    "url": "https://github.com/HikarusTenacity/politico/issues"
   },
-  "homepage": "https://github.com/HikarusTenacity/threejs-testing#readme",
+  "homepage": "https://github.com/HikarusTenacity/politico#readme",
   "devDependencies": {
+    "@types/node": "^26.6.5",
     "@types/three": "^0.185.4",
-    "concurrently": "^9.2.1",
+    "happy-dom": "^21.0.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.7",
     "vitest": "^4.1.5"

@@ -1,9 +1,19 @@
 // Dice animator for rolling cutscenes
-function createDiceAnimator(scene, camera) {
-    var animator = {
+import * as THREE from 'three';
+import { createDice } from '../models/dice';
+import { createPlayerAnimator } from './player-animator';
+import { clampValue } from "../../utils/clampValue";
+import type { DiceAnimator, DiceRotation } from "../../types/animation-types";
+import {DICE_ANIMATOR} from "../../constants/animation-parameters";
+
+export function createDiceAnimator(scene: THREE.Scene, camera: THREE.PerspectiveCamera): DiceAnimator {
+    const dice: THREE.Group = createDice();
+    scene.add(dice);
+
+    const animator: DiceAnimator = {
         scene: scene,
         camera: camera,
-        dice: null,
+        dice: dice,
         isAnimating: false,
         animationPhase: null,  // 'PAN', 'WAIT_FOR_CLICK', 'ROLLING', 'WAIT_AFTER_ROLL', 'MOVING'
         currentThrowType: 0,
@@ -17,6 +27,11 @@ function createDiceAnimator(scene, camera) {
         targetCameraLookAt: null,
         turnDisplayElement: null,
         currentPlayerPiece: null,
+        currentPlayerName: '',
+        currentPlayerColor: 0xffffff,
+        targetSpaceId: 0,
+        targetDiceRotation: {x: 0, y: 0, z: 0},
+        startDiceRotation: {x: 0, y: 0, z: 0},
         playerAnimator: null,
         waitAfterRollStartTime: 0,
         waitAfterRollDuration: 1000,  // 1 second wait
@@ -26,23 +41,39 @@ function createDiceAnimator(scene, camera) {
         rollForwardAmount: 0.5,
         cameraAlignStrength: 0.3,
 
-        setSpeedMultiplier: function(multiplier) {
-            this.speedMultiplier = Math.max(0.5, Math.min(2.0, multiplier || 1));
+        setSpeedMultiplier: function(multiplier: number): void {
+            this.speedMultiplier = clampValue(
+                multiplier ?? DICE_ANIMATOR.fallbackSpeedMultiplier,
+                DICE_ANIMATOR.minimumSpeedMultiplier,
+                DICE_ANIMATOR.maximumSpeedMultiplier,
+            )
         },
 
-        setPanDuration: function(durationMs) {
-            this.panDuration = Math.max(250, durationMs || 1200);
+        setPanDuration: function(durationMs: number): void {
+            this.panDuration = clampValue(
+                durationMs ?? DICE_ANIMATOR.fallbackPanDuration,
+                DICE_ANIMATOR.minimumDuration,
+                DICE_ANIMATOR.maximumDuration
+            )
         },
 
-        setRollDuration: function(durationMs) {
-            this.rollDuration = Math.max(250, durationMs || 1200);
+        setRollDuration: function(durationMs: number): void {
+            this.rollDuration = clampValue(
+                durationMs ?? DICE_ANIMATOR.fallbackRollDuration,
+                DICE_ANIMATOR.minimumDuration,
+                DICE_ANIMATOR.maximumDuration
+            )
         },
 
-        setSpinAmount: function(amount) {
-            this.spinAmount = Math.max(0, amount || 1);
+        setSpinAmount: function(amount: number): void {
+            this.spinAmount = clampValue(
+                amount ?? DICE_ANIMATOR.fallbackSpinAmount,
+                DICE_ANIMATOR.minimumSpinAmount,
+                DICE_ANIMATOR.maximumSpinAmount
+            )
         },
         
-        setupCutscene: function() {
+        setupCutscene: function(): void {
             //get original camera position
             this.cameraStartPos = new THREE.Vector3(
                 this.camera.position.x, 
@@ -51,7 +82,7 @@ function createDiceAnimator(scene, camera) {
             );
         },
         
-        restoreCutscene: function() {
+        restoreCutscene: function(): void {
             // set camera back to original pos
             if (this.cameraStartPos) {
                 this.camera.position.copy(this.cameraStartPos);
@@ -62,15 +93,16 @@ function createDiceAnimator(scene, camera) {
             this.hideTurnDisplay();
         },
         
-        showTurnDisplay: function(playerName, playerColor, message) {
+        showTurnDisplay: function(playerName: string, playerColor: number, message?: string): void {
             // Get or create turn display element
-            if (!this.turnDisplayElement) {
-                this.turnDisplayElement = document.getElementById('turnDisplay');
-            }
+            this.turnDisplayElement ??= document.getElementById('turnDisplay');
             
             // Update content and color
-            var colorHex = '#' + playerColor.toString(16).padStart(6, '0');
-            var displayMessage = message || (playerName + "'s Turn");
+            const colorHex = '#' + playerColor.toString(16).padStart(6, '0');
+            const displayMessage = message || (playerName + "'s Turn");
+            if (!this.turnDisplayElement) {
+                return;
+            }
             this.turnDisplayElement.innerHTML = displayMessage;
             this.turnDisplayElement.style.color = colorHex;
             this.turnDisplayElement.style.display = 'block';
@@ -82,7 +114,7 @@ function createDiceAnimator(scene, camera) {
             }
         },
         
-        rollDice: function(playerName, playerColor, playerPiece, targetSpaceId, diceRoll) {
+        rollDice: function(playerName: string, playerColor: number, playerPiece: THREE.Group, targetSpaceId: number, diceRoll: number): number {
             console.log('Starting animation for', playerName, 'to space', targetSpaceId);
             
             this.result = diceRoll;
@@ -114,17 +146,17 @@ function createDiceAnimator(scene, camera) {
             return this.result;
         },
         
-        setupCameraTargets: function(playerPiece) {
+        setupCameraTargets: function(playerPiece: THREE.Group): void {
             var pieceX = playerPiece.position.x;
             var pieceZ = playerPiece.position.z;
             this.targetCameraPos = new THREE.Vector3(pieceX-3, 2, pieceZ);
             this.targetCameraLookAt = new THREE.Vector3(pieceX, 0, pieceZ);
         },
         
-        getRotationForResult: function(result) {
+        getRotationForResult: function(result: number): DiceRotation {
             // Get the dice rotation for displaying the correct face on top
             // Face mapping: 1=right(+X), 2=bottom(-Y), 3=front(+Z), 4=back(-Z), 5=top(+Y), 6=left(-X)
-            var rotations = {
+            const rotations: Record<number, DiceRotation> = {
                 1: { x: 0, y: 0, z: Math.PI / 2 },          // Rotate right face to top
                 2: { x: Math.PI, y: 0, z: 0 },              // Rotate bottom face to top
                 3: { x: -Math.PI / 2, y: 0, z: 0 },         // Rotate front face to top
@@ -133,10 +165,10 @@ function createDiceAnimator(scene, camera) {
                 6: { x: 0, y: 0, z: -Math.PI / 2 }          // Rotate left face to top
             };
             
-            return rotations[result] || rotations[5];
+            return rotations[result] ?? {x: 0, y: 0, z: 0};
         },
         
-        smoothRotationtoward: function(targetRotation, progress) {
+        smoothRotationtoward: function(targetRotation: DiceRotation, progress: number): void {
             // Smoothly interpolate current rotation toward target rotation
             if (!this.dice) return;
             
@@ -145,7 +177,7 @@ function createDiceAnimator(scene, camera) {
             this.dice.rotation.z += (targetRotation.z - this.dice.rotation.z) * progress * 0.1;
         },
         
-        update: function() {
+        update: function(): void {
             if (!this.isAnimating) return;
             
             if (this.animationPhase === 'PAN') {
@@ -159,28 +191,28 @@ function createDiceAnimator(scene, camera) {
                     this.animationPhase = 'WAIT_FOR_CLICK';
                     this.showTurnDisplay(this.currentPlayerName, this.currentPlayerColor, 'Click to Roll!');
                     // Make piece glow
-                    if (this.gameManager && this.gameManager.setPieceGlow) {
+                    if (this.gameManager && this.gameManager.setPieceGlow && this.currentPlayerPiece) {
                         this.gameManager.setPieceGlow(this.currentPlayerPiece, true);
                     }
                 }
             } else if (this.animationPhase === 'ROLLING') {
-                var elapsed = (Date.now() - this.animationStartTime) * this.speedMultiplier;
-                var progress = Math.min(elapsed / this.rollDuration, 1);
+                const elapsed = (Date.now() - this.animationStartTime) * this.speedMultiplier;
+                const progress = Math.min(elapsed / this.rollDuration, 1);
                 
                 // Animate dice rolling onto the floor in front of player
                 if (this.dice && this.currentPlayerPiece) {
                     // Start from dice's current position (at player's hand), roll down and forward onto the floor
-                    var startX = this.dice.position.x;
-                    var startY = this.dice.position.y;
-                    var startZ = this.dice.position.z;
+                    const startX: number = this.dice.position.x;
+                    const startY: number = this.dice.position.y;
+                    const startZ: number = this.dice.position.z;
                     
-                    var endX = this.currentPlayerPiece.position.x + 2;
-                    var endY = -0.74;  // Ground level for 0.32 size dice (center at -0.74 puts bottom at ~-0.90)
-                    var endZ = this.currentPlayerPiece.position.z + 1;
+                    const endX: number = this.currentPlayerPiece.position.x + 2;
+                    const endY: number = -0.74;  // Ground level for 0.32 size dice (center at -0.74 puts bottom at ~-0.90)
+                    const endZ: number = this.currentPlayerPiece.position.z + 1;
                     
                     // Hit ground early (by 60%), then stay on ground
-                    var groundHitProgress = 0.6;
-                    var fallProgress;
+                    const groundHitProgress = 0.6;
+                    let fallProgress;
                     
                     if (progress < groundHitProgress) {
                         // Quick gravity-based fall to the ground
@@ -233,6 +265,9 @@ function createDiceAnimator(scene, camera) {
                 if (elapsed >= this.waitAfterRollDuration) {
                     // Start moving
                     this.animationPhase = 'MOVING';
+                    if (!this.currentPlayerPiece) {
+                        return;
+                    }
                     this.playerAnimator = createPlayerAnimator(this.currentPlayerPiece, this.targetSpaceId);
                     this.playerAnimator.setSpeedMultiplier(this.speedMultiplier);
                     this.hideTurnDisplay();
@@ -248,7 +283,7 @@ function createDiceAnimator(scene, camera) {
                 
                 // Keep camera centered over moving player with 45 degree angle, much closer
                 if (this.currentPlayerPiece) {
-                    var desiredCameraPos = new THREE.Vector3(
+                    const desiredCameraPos = new THREE.Vector3(
                         this.currentPlayerPiece.position.x - 2,
                         3,
                         this.currentPlayerPiece.position.z - 2
@@ -261,11 +296,11 @@ function createDiceAnimator(scene, camera) {
             }
         },
         
-        updateCameraAnimation: function(progress) {
+        updateCameraAnimation: function(progress: number) : void {
             // Smoothly glide camera to player piece
             if (this.currentPlayerPiece && this.cameraStartPos && this.targetCameraPos) {
                 // Easing function for smooth glide (ease-in-out cubic)
-                var easeProgress = progress < 0.5 
+                const easeProgress = progress < 0.5
                     ? 2 * progress * progress 
                     : -1 + (4 - 2 * progress) * progress;
                 
@@ -275,13 +310,13 @@ function createDiceAnimator(scene, camera) {
                 this.camera.position.z = this.cameraStartPos.z + (this.targetCameraPos.z - this.cameraStartPos.z) * easeProgress;
                 
                 // Update camera look-at to follow player
-                var pieceX = this.currentPlayerPiece.position.x;
-                var pieceZ = this.currentPlayerPiece.position.z;
+                const pieceX = this.currentPlayerPiece.position.x;
+                const pieceZ = this.currentPlayerPiece.position.z;
                 this.camera.lookAt(pieceX, 0.2, pieceZ);
             }
         },
         
-        handleClick: function(mouse, raycaster) {
+        handleClick: function(mouse: THREE.Vector2, raycaster: THREE.Raycaster) : boolean {
             // Only handle clicks during WAIT_FOR_CLICK phase
             if (!this.isAnimating || this.animationPhase !== 'WAIT_FOR_CLICK') {
                 return false;
@@ -289,7 +324,10 @@ function createDiceAnimator(scene, camera) {
             
             // Check if click is on the player piece
             raycaster.setFromCamera(mouse, this.camera);
-            var intersects = raycaster.intersectObjects([this.currentPlayerPiece], true);
+            if (!this.currentPlayerPiece) {
+                return false;
+            }
+            const intersects: THREE.Intersection[] = raycaster.intersectObjects([this.currentPlayerPiece], true);
             
             if (intersects.length > 0) {
                 // Start rolling
@@ -297,7 +335,7 @@ function createDiceAnimator(scene, camera) {
                 this.animationStartTime = Date.now();
                 this.showTurnDisplay(this.currentPlayerName, this.currentPlayerColor, 'Rolling...');
                 // Remove glow
-                if (this.gameManager && this.gameManager.setPieceGlow) {
+                if (this.gameManager?.setPieceGlow && this.currentPlayerPiece) {
                     this.gameManager.setPieceGlow(this.currentPlayerPiece, false);
                 }
                 return true;
@@ -306,14 +344,14 @@ function createDiceAnimator(scene, camera) {
             return false;
         },
         
-        finishAnimation: function() {
+        finishAnimation: function(): void {
             console.log('Animation finished');
             this.isAnimating = false;
             this.animationPhase = null;
             this.playerAnimator = null;
             
             // Remove glow if still active
-            if (this.gameManager && this.gameManager.setPieceGlow) {
+            if (this.gameManager && this.gameManager.setPieceGlow && this.currentPlayerPiece) {
                 this.gameManager.setPieceGlow(this.currentPlayerPiece, false);
             }
             
@@ -323,10 +361,6 @@ function createDiceAnimator(scene, camera) {
             }
         }
     };
-    
-    // Create the dice using the standalone function
-    animator.dice = createDice();
-    scene.add(animator.dice);
-    
+
     return animator;
 }

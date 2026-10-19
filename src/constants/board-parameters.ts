@@ -1,4 +1,4 @@
-import {SpaceDefinition} from "../types/board-types";
+import type {SpaceDefinition} from "../types/board-types";
 
 export const TOTAL_SPACES = 40; //36 normal, 4 corners
 export const CORNER_MULT = 1.6;

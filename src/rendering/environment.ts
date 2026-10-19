@@ -9,26 +9,38 @@ import {
     HEMISPHERE_LIGHT_INTENSITY,
     TREE
 } from "../constants/rendering-parameters";
-import { EnvironmentTheme } from "../types/environment-types";
 import {setCloudTheme} from "./sky";
 import {GROUND_TEXTURE_PATH} from "../constants/environment-parameters";
 
-let environmentTheme: EnvironmentTheme = getGameTheme().visuals.environment;
+import type {EnvironmentMaterials, EnvironmentTheme, EnvironmentVisuals} from "../types/environment-types";
+
+let environmentTheme: EnvironmentTheme = {
+    groundColor: 0x4CAF50,
+    sunlightColor: 0xfff8dc,
+    skyLightColor: 0x87ceeb,
+    treeTrunkColor: 0x4d2600,
+    treeFoliageColor: 0x1a5f1a,
+    mountainColor: 0x808080,
+    snowColor: 0xffffff,
+    cloudColor: 0xffffff,
+    boardSpaceColor: 0x4CAF50,
+    boardGridColor: 0xffffff
+};
 let swayMultiplier: number = 1.0;
 
-const environmentMaterials = {
-    ground: null as THREE.MeshPhongMaterial,
-    floor: null as THREE.MeshPhongMaterial,
-    directionalLight: null as THREE.DirectionalLight,
-    ambientLight: null as THREE.AmbientLight,
-    hemisphereLight: null as THREE.HemisphereLight
+const environmentMaterials: EnvironmentMaterials = {
+    ground: null,
+    floor: null,
+    directionalLight: null,
+    ambientLight: null,
+    hemisphereLight: null
 };
-const environmentVisuals = {
+const environmentVisuals: EnvironmentVisuals = {
     trees: [],
     mountains: []
 };
 
-function setupEnvironment(scene: THREE.Scene): THREE.DirectionalLight {
+export function setupEnvironment(scene: THREE.Scene): THREE.DirectionalLight {
     if (typeof getGameTheme === 'function') {
         environmentTheme = getGameTheme().visuals.environment;
     }
@@ -84,7 +96,7 @@ function setupEnvironment(scene: THREE.Scene): THREE.DirectionalLight {
             TREE.sway.speedBase + Math.random() * TREE.sway.speedRange; //NOSONAR
     }
 
-    environmentVisuals.mountains = createMountains() || [];
+    environmentVisuals.mountains = createMountains(scene) || [];
 
     const directionalLight = new THREE.DirectionalLight(sunlightColor, DIRECTIONAL_LIGHT_SETTINGS.intensity);
     directionalLight.position.set(
@@ -125,7 +137,7 @@ function setupEnvironment(scene: THREE.Scene): THREE.DirectionalLight {
     return directionalLight;
 }
 
-function setEnvironmentTheme(theme: EnvironmentTheme): void {
+export function setEnvironmentTheme(theme: EnvironmentTheme): void {
     environmentTheme = theme;
 
     environmentMaterials.ground?.color.setHex(theme.groundColor);
@@ -169,7 +181,7 @@ function setEnvironmentTheme(theme: EnvironmentTheme): void {
  * Set environment quality (low, medium, high)
  * @param quality
  */
-function setEnvironmentQuality(quality: string): void {
+export function setEnvironmentQuality(quality: string): void {
     const showTrees: boolean = quality === 'high';
     const showMountains: boolean = quality !== 'low';
 
@@ -196,11 +208,12 @@ export function setTreeSwayMultiplier(multiplier: number): void {
  * Update sway anim pos of trees based on current time
  * @param nowMs
  */
-function updateEnvironmentAnimations(nowMs: number): void {
+export function updateEnvironmentAnimations(nowMs: number): void {
     const animTime: number = nowMs * 0.001;
     const trees: THREE.Object3D[] = environmentVisuals.trees;
 
-    if (!trees.length || !trees[0].visible) return;
+    const firstTree: THREE.Object3D | undefined = trees[0];
+    if (!firstTree?.visible) return;
 
     for (const tree of trees) {
         const phase: number = tree.userData.swayPhase || TREE.sway.defaults.phase;

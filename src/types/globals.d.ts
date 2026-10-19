@@ -1,13 +1,13 @@
 /// <reference types="vite/client" />
+import type { PlayerState } from './player-types';
 
-import type { Player } from './player-types';
 
 declare global {
-	let PLAYERS: Player[];
+	var PLAYERS: PlayerState[];
 
 	interface Window {
 		THREE?: typeof import('three');
-		PLAYERS?: Player[];
+		PLAYERS?: PlayerState[];
 	}
 }
 

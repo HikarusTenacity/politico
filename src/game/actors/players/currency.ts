@@ -1,4 +1,6 @@
 import { clampValue } from "../../../utils/clampValue";
+import {getPlayerById} from "./getters";
+import {PLAYER_DEFAULTS} from "../../../constants/player-parameters";
 
 /**
  * Sets the currency of a player, ensuring it stays within bounds.
@@ -14,7 +16,11 @@ export function setPlayerCurrency(playerId: number, amount: number) {
     const player = getPlayerById(playerId);
     if (!player) return;
 
-    player.currency = clampValue(amount, 0, MAX_PLAYER_CURRENCY);
+    player.currency = clampValue(
+        amount,
+        0,
+        PLAYER_DEFAULTS.maxCurrency
+    );
 }
 
 /**
