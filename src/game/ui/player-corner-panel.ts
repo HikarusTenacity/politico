@@ -4,26 +4,7 @@ import {createGuy} from '../models/characters/guy';
 import {MAX_PLAYER_BUFF_SLOTS, PLAYERS} from '../actors/players/player-manager';
 import type {GameManager} from '../../types/game-manager-types';
 import type {PlayerState} from '../../types/player-types';
-
-interface CornerPanel {
-    panel: HTMLDivElement;
-    header: HTMLDivElement;
-    portrait: HTMLSpanElement;
-    name: HTMLSpanElement;
-    characterLine: HTMLDivElement;
-    currencyLine: HTMLDivElement;
-    buffsLine: HTMLDivElement;
-}
-
-interface PortraitViewport {
-    renderer: THREE.WebGLRenderer;
-    scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
-    rimLight: THREE.PointLight;
-    model: THREE.Group | null;
-    sourcePiece: THREE.Group | null;
-    baseY: number;
-}
+import type {CornerPanel, PortraitViewport} from "../../types/ui-types";
 
 export const playerCornerPanels = {
     cornerPositions: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
@@ -36,15 +17,15 @@ export const playerCornerPanels = {
     createCornerPanels: function(): void {
         this.destroyCornerPanels();
 
-        for (var i = 0; i < 4; i++) {
-            var panel = document.createElement('div');
+        for (let i: number = 0; i < 4; i++) {
+            const panel: HTMLDivElement = document.createElement('div');
             panel.className = 'player-corner ' + this.cornerPositions[i];
             panel.id = 'player-corner-' + i;
 
-            var header = document.createElement('div');
+            const header: HTMLDivElement = document.createElement('div');
             header.className = 'player-corner-header';
 
-            var portrait = document.createElement('span');
+            const portrait: HTMLSpanElement = document.createElement('span');
             portrait.className = 'player-portrait';
             portrait.innerHTML =
                 '<span class="player-portrait">' +
@@ -52,15 +33,15 @@ export const playerCornerPanels = {
                     '<span class="player-portrait-body"></span>' +
                 '</span>';
 
-            var name = document.createElement('span');
+            const name: HTMLSpanElement = document.createElement('span');
             name.className = 'player-corner-name';
 
             header.appendChild(portrait);
             header.appendChild(name);
 
-            var characterLine = document.createElement('div');
-            var currencyLine = document.createElement('div');
-            var buffsLine = document.createElement('div');
+            const characterLine: HTMLDivElement = document.createElement('div');
+            const currencyLine: HTMLDivElement = document.createElement('div');
+            const buffsLine: HTMLDivElement = document.createElement('div');
 
             panel.appendChild(header);
             panel.appendChild(characterLine);
@@ -83,10 +64,10 @@ export const playerCornerPanels = {
     },
 
     createPortraitViewport: function(index: number): void {
-        if (typeof THREE === 'undefined' || !this.cornerPanels[index]) return;
+        if (!this.cornerPanels[index]) return;
 
-        var portraitHost = this.cornerPanels[index].portrait;
-        var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const portraitHost: HTMLElement = this.cornerPanels[index].portrait;
+        const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.setSize(this.portraitWidth, this.portraitHeight, false);
         renderer.setClearColor(0x000000, 0);
@@ -95,20 +76,38 @@ export const playerCornerPanels = {
         portraitHost.innerHTML = '';
         portraitHost.appendChild(renderer.domElement);
 
-        var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera(42, this.portraitWidth / this.portraitHeight, 0.1, 20);
+        const scene: THREE.Scene = new THREE.Scene();
+        const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(42, this.portraitWidth / this.portraitHeight, 0.1, 20);
         camera.position.set(0, 0.65, 2.1);
         camera.lookAt(new THREE.Vector3(0, 0.35, 0));
 
-        var ambient = new THREE.AmbientLight(0xffffff, 0.9);
+        const ambient: THREE.AmbientLight = new THREE.AmbientLight(
+            0xffffff,
+            0.9
+        );
         scene.add(ambient);
 
-        var keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
-        keyLight.position.set(2.5, 3.5, 3.5);
+        const keyLight: THREE.DirectionalLight = new THREE.DirectionalLight(
+            0xffffff,
+            1.1
+        );
+        keyLight.position.set(
+            2.5,
+            3.5,
+            3.5
+        );
         scene.add(keyLight);
 
-        var rimLight = new THREE.PointLight(0xffffff, 1.5, 8);
-        rimLight.position.set(-2, 2, 2);
+        const rimLight: THREE.PointLight = new THREE.PointLight(
+            0xffffff,
+            1.5,
+            8
+        );
+        rimLight.position.set(
+            -2,
+            2,
+            2
+        );
         scene.add(rimLight);
 
         this.portraitViewports[index] = {
@@ -123,7 +122,7 @@ export const playerCornerPanels = {
     },
 
     getPortraitModelForPlayer: function(player: PlayerState, index: number): THREE.Group {
-        var model: THREE.Group;
+        let model: THREE.Group;
 
         if (player.piece) {
             model = player.piece.clone(true);
@@ -142,21 +141,21 @@ export const playerCornerPanels = {
             }
         });
 
-        var box = new THREE.Box3().setFromObject(model);
-        var center = box.getCenter(new THREE.Vector3());
+        const box: THREE.Box3 = new THREE.Box3().setFromObject(model);
+        const center: THREE.Vector3 = box.getCenter(new THREE.Vector3());
         model.position.sub(center);
 
         box.setFromObject(model);
-        var size = box.getSize(new THREE.Vector3());
+        const size: THREE.Vector3 = box.getSize(new THREE.Vector3());
         if (size.y > 0) {
-            var scale = 2.35 / size.y;
+            const scale: number = 2.35 / size.y;
             model.scale.set(scale, scale, scale);
         }
 
         box.setFromObject(model);
-        var scaledSize = box.getSize(new THREE.Vector3());
-        var scaledMinY = box.min.y;
-        var chestY = scaledMinY + scaledSize.y * 0.65;
+        const scaledSize: THREE.Vector3 = box.getSize(new THREE.Vector3());
+        const scaledMinY: number = box.min.y;
+        const chestY: number = scaledMinY + scaledSize.y * 0.65;
         model.position.y -= chestY;
         model.position.y += 0.05;
 
@@ -170,7 +169,7 @@ export const playerCornerPanels = {
     },
 
     updatePortraitViewport: function(player: PlayerState, index: number, isCurrentTurn: boolean): void {
-        var viewport = this.portraitViewports[index];
+        let viewport: PortraitViewport | undefined = this.portraitViewports[index];
         if (!viewport) {
             return;
         }
@@ -194,8 +193,8 @@ export const playerCornerPanels = {
     },
 
     destroyCornerPanels: function(): void {
-        for (var r = 0; r < this.portraitViewports.length; r++) {
-            var viewport = this.portraitViewports[r];
+        for (const element of this.portraitViewports) {
+            let viewport: PortraitViewport | undefined = element;
             if (!viewport) {
                 continue;
             }
@@ -211,12 +210,12 @@ export const playerCornerPanels = {
         }
         this.portraitViewports = [];
 
-        for (var i = 0; i < this.cornerPanels.length; i++) {
-            const panelData = this.cornerPanels[i];
+        for (const element of this.cornerPanels) {
+            const panelData: CornerPanel = element;
             if (!panelData) continue;
-            var panel = panelData.panel;
-            if (panel && panel.parentNode) {
-                panel.parentNode.removeChild(panel);
+            let panel: HTMLDivElement = panelData.panel;
+            if (panel?.parentNode) {
+                panel.remove();
             }
         }
         this.cornerPanels = [];

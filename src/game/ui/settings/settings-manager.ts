@@ -1,37 +1,37 @@
-// Settings Manager for game configuration
 import {GAME_SETTINGS_CONFIG, GAME_SETTINGS_STORAGE_KEY} from "../../../constants/settings";
-import type {GameSettings, GraphicsQuality, SettingsManager} from "../../../types/settings-types";
 import {getGameThemeNames} from "../../themes/game-theme";
-import type {GameThemeName} from "../../../types/theme";
 import {clampValue} from "../../../utils/clampValue";
+import type {GameThemeName} from "../../../types/theme";
+import type {GameSettings, GraphicsQuality, SettingsManager} from "../../../types/settings-types";
 
 export function createSettingsManager(): SettingsManager {
     const STORAGE_KEY: string = GAME_SETTINGS_STORAGE_KEY;
     const defaultSettings: GameSettings = GAME_SETTINGS_CONFIG;
-    const cloneDefaultSettings = (): GameSettings => ({...defaultSettings});
+    const cloneDefaultSettings: () => GameSettings = (): GameSettings => ({...defaultSettings});
+
     const validThemes: GameThemeName[] = getGameThemeNames();
-    const validGraphicsQualities: GraphicsQuality[] = ['low', 'medium', 'high'];
+    const validGraphicsQualities: Set<GraphicsQuality> = new Set(['low', 'medium', 'high']);
 
     function normalizeSettings(value: unknown): GameSettings {
         const parsed = value && typeof value === 'object'
             ? value as Partial<Record<keyof GameSettings, unknown>>
             : {};
-        const masterVolume = typeof parsed.masterVolume === 'number'
+        const masterVolume: number = typeof parsed.masterVolume === 'number'
             ? clampValue(parsed.masterVolume, 0, 1)
             : defaultSettings.masterVolume;
-        const musicVolume = typeof parsed.musicVolume === 'number'
+        const musicVolume: number = typeof parsed.musicVolume === 'number'
             ? clampValue(parsed.musicVolume, 0, 1)
             : masterVolume * 0.85;
-        const sfxVolume = typeof parsed.sfxVolume === 'number'
+        const sfxVolume: number = typeof parsed.sfxVolume === 'number'
             ? clampValue(parsed.sfxVolume, 0, 1)
             : masterVolume;
-        const graphicsQuality = validGraphicsQualities.includes(
+        const graphicsQuality: GraphicsQuality = validGraphicsQualities.has(
             parsed.graphicsQuality as GraphicsQuality
         ) ? parsed.graphicsQuality as GraphicsQuality : defaultSettings.graphicsQuality;
-        const gameSpeed = typeof parsed.gameSpeed === 'number'
+        const gameSpeed: number = typeof parsed.gameSpeed === 'number'
             ? clampValue(parsed.gameSpeed, 0.5, 2)
             : defaultSettings.gameSpeed;
-        const theme = validThemes.includes(parsed.theme as GameThemeName)
+        const theme: GameThemeName = validThemes.includes(parsed.theme as GameThemeName)
             ? parsed.theme as GameThemeName
             : defaultSettings.theme;
 
@@ -64,13 +64,13 @@ export function createSettingsManager(): SettingsManager {
             theme: "default"
         },
         listeners: [],
-        
-        init: function(): void {
+
+        init: function (): void {
             this.loadSettings();
         },
-        
-        loadSettings: function(): void {
-            const stored = localStorage.getItem(STORAGE_KEY);
+
+        loadSettings: function (): void {
+            const stored: string | null = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 try {
                     this.settings = normalizeSettings(JSON.parse(stored));
@@ -82,8 +82,8 @@ export function createSettingsManager(): SettingsManager {
                 this.settings = cloneDefaultSettings();
             }
         },
-        
-        saveSettings: function(): void {
+
+        saveSettings: function (): void {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
                 this.notifyListeners();
@@ -91,56 +91,55 @@ export function createSettingsManager(): SettingsManager {
                 console.error('couldnt save settings :(', e);
             }
         },
-        
+
         getSetting<K extends keyof GameSettings>(key: K): GameSettings[K] {
             return this.settings[key];
         },
-        
-        setSetting: function(key: keyof GameSettings, value: unknown): boolean {
+
+        setSetting: function (key: keyof GameSettings, value: unknown): boolean {
             if (Object.hasOwn(this.settings, key)) {
-                const normalized = normalizeSettings({...this.settings, [key]: value});
-                this.settings = normalized;
+                this.settings = normalizeSettings({...this.settings, [key]: value});
                 this.saveSettings();
                 return true;
             }
             return false;
         },
-        
-        getAll: function(): GameSettings {
+
+        getAll: function (): GameSettings {
             return {...this.settings};
         },
-        
-        resetToDefaults: function(): void {
+
+        resetToDefaults: function (): void {
             this.settings = cloneDefaultSettings();
             this.saveSettings();
         },
-        
+
         // Observer pattern for settings changes
-        subscribe: function(callback: Function): void {
+        subscribe: function (callback: Function): void {
             if (typeof callback === 'function') {
                 this.listeners.push(callback);
             }
         },
-        
-        unsubscribe: function(callback: Function): void {
-            this.listeners = this.listeners.filter(function(listener: Function): boolean {
+
+        unsubscribe: function (callback: Function): void {
+            this.listeners = this.listeners.filter(function (listener: Function): boolean {
                 return listener !== callback;
             });
         },
-        
-        notifyListeners: function(): void {
+
+        notifyListeners: function (): void {
             const settings: GameSettings = this.settings;
-            this.listeners.forEach(function(callback: Function): void {
+            this.listeners.forEach(function (callback: Function): void {
                 callback(settings);
             });
         },
-        
+
         // Helper methods for specific settings
-        getVolume: function(): number {
+        getVolume: function (): number {
             return this.settings.masterVolume;
         },
-        
-        setVolume: function(value: number): void {
+
+        setVolume: function (value: number): void {
             value = clampValue(
                 value,
                 0,
@@ -151,13 +150,13 @@ export function createSettingsManager(): SettingsManager {
             this.settings.sfxVolume = value;
             this.saveSettings();
         },
-        
-        getGraphicsQuality: function(): GraphicsQuality {
+
+        getGraphicsQuality: function (): GraphicsQuality {
             return this.settings.graphicsQuality;
         },
-        
-        setGraphicsQuality: function(quality: GraphicsQuality): void {
-            if (validGraphicsQualities.includes(quality)) {
+
+        setGraphicsQuality: function (quality: GraphicsQuality): void {
+            if (validGraphicsQualities.has(quality)) {
                 this.settings.graphicsQuality = quality;
                 this.saveSettings();
             }

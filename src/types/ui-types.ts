@@ -1,3 +1,6 @@
+import type {GameManager} from "./game-manager-types";
+import * as THREE from "three";
+
 export type buttonName = 'start' | 'settings' | 'credits' | 'rules';
 
 
@@ -26,4 +29,31 @@ export interface TitleScreen {
 export interface Option {
     label: string,
     value: string
+}
+
+export interface GameUI {
+    infoDiv: HTMLDivElement;
+    activeGameManager: GameManager | null;
+    init(): void;
+    update(GameManager: GameManager): void;
+}
+
+export interface CornerPanel {
+    panel: HTMLDivElement;
+    header: HTMLDivElement;
+    portrait: HTMLSpanElement;
+    name: HTMLSpanElement;
+    characterLine: HTMLDivElement;
+    currencyLine: HTMLDivElement;
+    buffsLine: HTMLDivElement;
+}
+
+export interface PortraitViewport {
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    rimLight: THREE.PointLight;
+    model: THREE.Group | null;
+    sourcePiece: THREE.Group | null;
+    baseY: number;
 }

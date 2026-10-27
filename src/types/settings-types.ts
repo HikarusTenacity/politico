@@ -36,3 +36,26 @@ export interface SettingsManager {
     getTheme: () => GameThemeName;
     setTheme: (theme: GameThemeName) => void;
 }
+
+export type SettingSection = HTMLDivElement & {
+    controls: HTMLDivElement;
+    volumeSlider: HTMLInputElement;
+    volumeValue: HTMLSpanElement;
+    graphicsButtons: HTMLButtonElement[];
+    speedSlider: HTMLInputElement;
+    speedValue: HTMLSpanElement;
+    themeButtons: HTMLButtonElement[];
+};
+
+export interface SettingsMenu {
+    root: HTMLDivElement;
+    isVisible: boolean;
+    show(): void;
+    hide(): void;
+    onClose(callback: () => void): void;
+    onReset(callback: () => void): void;
+    onVolumeChange(callback: (value: number) => void): void;
+    onGraphicsChange(callback: (value: GraphicsQuality) => void): void;
+    onThemeChange(callback: (value: GameThemeName) => void): void;
+    onGameSpeedChange(callback: (value: number) => void): void;
+}

@@ -30,8 +30,12 @@ import { createTitleScreen } from './game/ui/menu/title-screen';
 
 import type { GameThemeName } from './types/theme';
 import type { CameraControls } from "./types/camera-types";
-import type {GameSettings, GraphicsQuality, SettingsManager} from "./types/settings-types";
+import type {GameSettings, GraphicsQuality, SettingsManager, SettingsMenu} from "./types/settings-types";
 import type {SkyQuality} from "./types/environment-types";
+import type {GameManager} from "./types/game-manager-types";
+import type {GameUI, TitleScreen} from "./types/ui-types";
+import type {CreditsScreen} from "./types/credits-types";
+import {createGraphicsQualityApplier} from "./rendering/graphics";
 
 const scene: THREE.Scene = new THREE.Scene();
 const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
@@ -135,7 +139,7 @@ const infoDiv: HTMLDivElement = document.getElementById('info') as HTMLDivElemen
 const fpsCounter  = createFpsCounter();
 
 // create the pieces
-const worldPieces = createGamePieces();
+export const worldPieces = createGamePieces();;
 for (const element of worldPieces) {
     scene.add(element);
 }
@@ -147,36 +151,25 @@ initializeBoardSpaces();
 positionPiecesForCharacterSelect(worldPieces);
 
 // Setup environment and get directional light
-const directionalLight = setupEnvironment(scene);
+const directionalLight: THREE.DirectionalLight = setupEnvironment(scene);
 
 // Setup sky elements
 setupSky(scene, directionalLight);
 
-// Setup playable space visualization
 createPlayableSpacesVisualization(scene);
-
-// Setup board grid visualization
 createBoardGridVisualization(scene);
 
 // Setup camera controls
 const cameraControls: CameraControls = setupCameraControls(camera, scene);
-
-// Initialize game manager for local 4-player co-op
-const gameManager = createGameManager(scene, camera, worldPieces, renderer.domElement);
-
-// Initialize game UI
-const gameUI = createGameUI(infoDiv);
+export const gameManager: GameManager = createGameManager(scene, camera, worldPieces, renderer.domElement);
+const gameUI: GameUI = createGameUI(infoDiv);
 
 // Initialize settings systems
 const settingsManager: SettingsManager = createSettingsManager();
 applyGameTheme(settingsManager.getTheme());
-const settingsMenu = createSettingsMenu(settingsManager);
-const creditsScreen = createCreditsScreen();
+const settingsMenu: SettingsMenu = createSettingsMenu(settingsManager);
+const creditsScreen: CreditsScreen = createCreditsScreen();
 
-function setSceneShadowsEnabled(enabled: boolean): void {
-    renderer.shadowMap.enabled = enabled;
-    directionalLight.castShadow = enabled;
-}
 function applyMasterVolume(volume: number): void {
     const vol: number = clampValue(
         volume,
@@ -190,22 +183,7 @@ function applyMasterVolume(volume: number): void {
     (window as any).__GAME_MASTER_VOLUME__ = vol;
 }
 
-function applyGraphicsQuality(quality: SkyQuality): void {
-    let shadowsEnabled: boolean = quality !== 'low';
-    let effectsEnabled: boolean = quality === 'high';
-
-    setSceneShadowsEnabled(shadowsEnabled);
-
-    if (typeof setCloudEffectsEnabled === 'function') {
-        setCloudEffectsEnabled(effectsEnabled);
-    }
-
-    if (typeof setEnvironmentQuality === 'function') setEnvironmentQuality(quality);
-
-    if (typeof setSkyQuality === 'function') {
-        setSkyQuality(quality);
-    }
-}
+const applyGraphicsQuality = createGraphicsQualityApplier({ renderer, directionalLight });
 
 function applySettings(settings: GameSettings): void {
     applyMasterVolume(settings.masterVolume);
@@ -230,31 +208,31 @@ settingsMenu.onGraphicsChange(function(quality: GraphicsQuality): void {
     settingsManager.setGraphicsQuality(quality);
 });
 
-settingsMenu.onThemeChange(function(theme: GameThemeName) {
+settingsMenu.onThemeChange(function(theme: GameThemeName): void {
     settingsManager.setTheme(theme);
 });
 
-settingsMenu.onGameSpeedChange(function(speed: number) {
+settingsMenu.onGameSpeedChange(function(speed: number): void {
     settingsManager.setGameSpeed(speed);
 });
 
-settingsMenu.onReset(function() {
+settingsMenu.onReset(function(): void {
     settingsManager.resetToDefaults();
 });
 
-settingsMenu.onClose(function() {
+settingsMenu.onClose(function(): void {
     settingsMenu.hide();
 });
 
 // Initialize title screen gate
-const titleScreen = createTitleScreen();
-let hasGameStarted = false;
+const titleScreen: TitleScreen = createTitleScreen();
+let hasGameStarted: boolean = false;
 
 if (gameManager.inputHandler?.actionButton) {
     gameManager.inputHandler.actionButton.style.display = 'none';
 }
 
-titleScreen.onStart(function() {
+titleScreen.onStart(function(): void {
     hasGameStarted = true;
     titleScreen.hide();
 
@@ -263,16 +241,16 @@ titleScreen.onStart(function() {
     }
 });
 
-titleScreen.onButton('settings', function() {
+titleScreen.onButton('settings', function(): void {
     settingsMenu.show();
 });
 
-titleScreen.onButton('credits', function() {
+titleScreen.onButton('credits', function(): void {
     creditsScreen.show();
 });
 
 // Render loop
-const render = function () {
+const render = function (): void {
     requestAnimationFrame(render);
 
     if (!hasGameStarted) {
@@ -361,60 +339,18 @@ const render = function () {
     });
 };
 
-// === ANIMATION EDITOR API ===
-// Expose game state for testing/debugging
 (window as any).GAME_STATE = {
     scene: scene,
     camera: camera,
     renderer: renderer,
     pieces: worldPieces,
     gameManager: gameManager,
-    get playerAnimator() {
+    get playerAnimator(): any {
         return (window as any).playerAnimator || null;
     },
     diceAnimator: gameManager.diceAnimator,
-    get isAnimating() {
+    get isAnimating(): boolean {
         return gameManager.diceAnimator?.isAnimating ?? false;
-    }
-};
-
-(window as any).testAnimations = {
-    playPlayerWalk: function(playerIndex: number, targetSpace: number) {
-        const piece = worldPieces[playerIndex || 0];
-        if (!piece) {
-            console.error('Player ' + playerIndex + ' not found');
-            return;
-        }
-        let animator = createPlayerAnimator(piece, targetSpace);
-        animator.init();
-        (window as any).playerAnimator = animator;
-    },
-
-    rollDice: function(speedMultiplier: number) {
-        if (!gameManager?.diceAnimator) {
-            console.error('Dice animator not available');
-            return;
-        }
-        gameManager.diceAnimator.setupCutscene();
-        gameManager.diceAnimator.setSpeedMultiplier(speedMultiplier || 1.0);
-    },
-
-    setIdleSpeedMultiplier: function(mult: number) {
-        worldPieces.forEach((piece: any) => {
-            piece.userData.idleSpeedMultiplier = mult;
-        });
-    },
-
-    setBodySwayAmount: function(amount: number) {
-        worldPieces.forEach((piece: any) => {
-            piece.userData.bodySwayAmount = amount;
-        });
-    },
-
-    resetIdlePhases: function() {
-        worldPieces.forEach((piece: any) => {
-            piece.userData.idlePhase = Math.random() * Math.PI * 2; //NOSONAR
-        });
     }
 };
 

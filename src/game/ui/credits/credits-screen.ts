@@ -1,14 +1,7 @@
 import { creditsLines } from '../../../constants/credits';
+import type {CreditsScreen} from "../../../types/credits-types";
 
-export function createCreditsScreen(): {
-    root: HTMLDivElement;
-    viewport: HTMLDivElement;
-    track: HTMLDivElement;
-    scrollTimer: number | null;
-    isVisible: boolean;
-    show(): void;
-    hide(): void;
-} {
+export function createCreditsScreen(): CreditsScreen {
     const root: HTMLDivElement = document.createElement('div');
     root.className = 'credits-overlay hidden';
 
@@ -49,15 +42,7 @@ export function createCreditsScreen(): {
     root.appendChild(panel);
     document.body.appendChild(root);
 
-    const screen: {
-        root: HTMLDivElement;
-        viewport: HTMLDivElement;
-        track: HTMLDivElement;
-        scrollTimer: number | null;
-        isVisible: boolean;
-        show(): void;
-        hide(): void;
-    } = {
+    const screen: CreditsScreen = {
         root: root,
         viewport: viewport,
         track: track,
@@ -69,18 +54,17 @@ export function createCreditsScreen(): {
 
             this.viewport.scrollTop = 0;
 
-            let self = this;
             if (this.scrollTimer) {
                 clearInterval(this.scrollTimer);
             }
 
-            this.scrollTimer = setInterval(function(): void {
-                if (!self.isVisible) return;
+            this.scrollTimer = setInterval((): void => {
+                if (!this.isVisible) return;
 
-                self.viewport.scrollTop += 1;
+                this.viewport.scrollTop += 1;
                 // prevent overscrolling, loop
-                if (self.viewport.scrollTop + self.viewport.clientHeight >= self.viewport.scrollHeight) {
-                    self.viewport.scrollTop = 0;
+                if (this.viewport.scrollTop + this.viewport.clientHeight >= this.viewport.scrollHeight) {
+                    this.viewport.scrollTop = 0;
                 }
             }, 22);
         },

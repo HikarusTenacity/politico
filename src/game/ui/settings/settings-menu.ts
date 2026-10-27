@@ -1,31 +1,8 @@
 // Settings Menu UI
 import {GRAPHICS_OPTIONS, QUALITY_VALUES} from "../../../constants/ui-parameters";
 import type {Option} from "../../../types/ui-types";
-import type {GraphicsQuality, SettingsManager} from "../../../types/settings-types";
+import type {GraphicsQuality, SettingSection, SettingsManager, SettingsMenu} from "../../../types/settings-types";
 import type {GameThemeName} from "../../../types/theme";
-
-type SettingSection = HTMLDivElement & {
-    controls: HTMLDivElement;
-    volumeSlider: HTMLInputElement;
-    volumeValue: HTMLSpanElement;
-    graphicsButtons: HTMLButtonElement[];
-    speedSlider: HTMLInputElement;
-    speedValue: HTMLSpanElement;
-    themeButtons: HTMLButtonElement[];
-};
-
-interface SettingsMenu {
-    root: HTMLDivElement;
-    isVisible: boolean;
-    show(): void;
-    hide(): void;
-    onClose(callback: () => void): void;
-    onReset(callback: () => void): void;
-    onVolumeChange(callback: (value: number) => void): void;
-    onGraphicsChange(callback: (value: GraphicsQuality) => void): void;
-    onThemeChange(callback: (value: GameThemeName) => void): void;
-    onGameSpeedChange(callback: (value: number) => void): void;
-}
 
 export function createSettingsMenu(settingsManager: SettingsManager): SettingsMenu {
     const root: HTMLDivElement = document.createElement('div');
@@ -264,78 +241,90 @@ export function createSettingsMenu(settingsManager: SettingsManager): SettingsMe
             });
         },
     };
-    return menu;
-}
+    volumeSection.volumeSlider.addEventListener('input', (e) => {
+        const target = e.currentTarget as HTMLInputElement;
+        const value = Number.parseFloat(target.value) / 100;
+        volumeSection.volumeValue.textContent = target.value + '%';
+        settingsManager.setVolume(value);
+    });
+    function createSettingSection(labelText: string, dataValue?: string): HTMLDivElement {
+        const section = document.createElement('div') as SettingSection;
+        section.className = 'settings-section';
+        if (dataValue) {
+            section.dataset.setting = dataValue;
+        }
 
-// Helper function to create a settings section
-function createSettingSection(labelText: string, dataValue?: string): HTMLDivElement {
-    const section = document.createElement('div') as SettingSection;
-    section.className = 'settings-section';
-    if (dataValue) {
-        section.dataset.setting = dataValue;
+        const label: HTMLLabelElement = document.createElement('label');
+        label.className = 'settings-label';
+        label.textContent = labelText;
+        section.appendChild(label);
+
+        const controlsDiv: HTMLDivElement = document.createElement('div');
+        controlsDiv.className = 'settings-controls';
+        section.appendChild(controlsDiv);
+        section.controls = controlsDiv;
+
+        return section;
     }
-
-    const label: HTMLLabelElement = document.createElement('label');
-    label.className = 'settings-label';
-    label.textContent = labelText;
-    section.appendChild(label);
-
-    const controlsDiv: HTMLDivElement = document.createElement('div');
-    controlsDiv.className = 'settings-controls';
-    section.appendChild(controlsDiv);
-    section.controls = controlsDiv;
-
-    return section;
-}
 
 // Helper function to create volume slider
-function createVolumeSlider(id: string, initialValue: number): HTMLInputElement {
-    const container: HTMLDivElement = document.createElement('div');
-    container.className = 'slider-container';
+    function createVolumeSlider(id: string, initialValue: number): HTMLInputElement {
+        const container: HTMLDivElement = document.createElement('div');
+        container.className = 'slider-container';
 
-    const slider: HTMLInputElement = document.createElement('input');
-    slider.type = 'range';
-    slider.id = id;
-    slider.className = 'settings-slider';
-    slider.min = '0';
-    slider.max = '100';
-    slider.value = String(initialValue);
-    slider.step = '5';
+        const slider: HTMLInputElement = document.createElement('input');
+        slider.type = 'range';
+        slider.id = id;
+        slider.className = 'settings-slider';
+        slider.min = '0';
+        slider.max = '100';
+        slider.value = String(initialValue);
+        slider.step = '5';
 
-    container.appendChild(slider);
-    return slider;
-}
+        container.appendChild(slider);
+        return slider;
+    }
 
 // Helper function to create game speed slider
-function createGameSpeedSlider(id: string, initialValue: number): HTMLInputElement {
-    const slider: HTMLInputElement = document.createElement('input');
-    slider.type = 'range';
-    slider.id = id;
-    slider.className = 'settings-slider';
-    slider.min = '0.5';
-    slider.max = '2.0';
-    slider.value = String(initialValue);
-    slider.step = '0.1';
+    function createGameSpeedSlider(id: string, initialValue: number): HTMLInputElement {
+        const slider: HTMLInputElement = document.createElement('input');
+        slider.type = 'range';
+        slider.id = id;
+        slider.className = 'settings-slider';
+        slider.min = '0.5';
+        slider.max = '2.0';
+        slider.value = String(initialValue);
+        slider.step = '0.1';
 
-    return slider;
-}
-
-// Helper function to create value label
-function createValueLabel(text: string): HTMLSpanElement {
-    const label: HTMLSpanElement = document.createElement('span');
-    label.className = 'settings-value-label';
-    label.textContent = text;
-    return label;
-}
-
-// Helper function to create option button
-function createOptionButton(label: string, isSelected: boolean): HTMLButtonElement {
-    const btn: HTMLButtonElement = document.createElement('button');
-    btn.className = 'settings-option-btn';
-    btn.type = 'button';
-    btn.textContent = label;
-    if (isSelected) {
-        btn.classList.add('selected');
+        return slider;
     }
-    return btn;
+
+    function createValueLabel(text: string): HTMLSpanElement {
+        const label: HTMLSpanElement = document.createElement('span');
+        label.className = 'settings-value-label';
+        label.textContent = text;
+        return label;
+    }
+
+    function createOptionButton(label: string, isSelected: boolean): HTMLButtonElement {
+        const btn: HTMLButtonElement = document.createElement('button');
+        btn.className = 'settings-option-btn';
+        btn.type = 'button';
+        btn.textContent = label;
+        if (isSelected) {
+            btn.classList.add('selected');
+        }
+        return btn;
+    }
+
+// 2. Default close and reset behavior
+    closeButton.addEventListener('click', () => menu.hide());
+    applyButton.addEventListener('click', () => menu.hide());
+    resetButton.addEventListener('click', () => {
+        if (confirm('Reset all settings to defaults?')) {
+            settingsManager.resetToDefaults();
+        }
+    });
+
+    return menu;
 }

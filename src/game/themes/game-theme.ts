@@ -1,9 +1,9 @@
-import type {GameTheme, GameThemeName} from "../../types/theme";
-import {setSkyTheme} from "../../rendering/sky";
+import type { GameTheme, GameThemeName } from "../../types/theme";
+import { setSkyTheme } from "../../rendering/sky";
 import { setDebugStatsTheme } from "../../utils/debug-stats-formatter";
-import {setBoardTheme} from "../../utils/grid-visual";
-import {setEnvironmentTheme} from "../../rendering/environment";
-import {setPlayerFallbackColors} from "../ui/player-corner-panel";
+import { setBoardTheme } from "../../utils/grid-visual";
+import { setEnvironmentTheme } from "../../rendering/environment";
+import { setPlayerFallbackColors } from "../ui/player-corner-panel";
 
 export const GAME_THEME_PRESETS: Record<GameThemeName, GameTheme> = {
     default: {
@@ -277,9 +277,9 @@ export const GAME_THEME_PRESETS: Record<GameThemeName, GameTheme> = {
 
 let activeGameTheme: GameTheme = GAME_THEME_PRESETS.default;
 
-function setThemeCssVars(theme: GameTheme) {
-    const root = document.documentElement;
-    const body = document.body;
+function setThemeCssVars(theme: GameTheme): void {
+    const root: HTMLElement | null = document.documentElement;
+    const body: HTMLElement | null = document.body;
 
     if (!root) return;
 
@@ -299,26 +299,11 @@ export function applyGameTheme(themeName: GameThemeName): GameTheme {
     const nextTheme: GameTheme = GAME_THEME_PRESETS[themeName] || GAME_THEME_PRESETS.default;
     activeGameTheme = nextTheme;
     setThemeCssVars(nextTheme);
-
-    if (typeof setDebugStatsTheme === 'function') {
-        setDebugStatsTheme(nextTheme.debugStatsTheme);
-    }
-
-    if (typeof setSkyTheme === 'function') {
-        setSkyTheme(nextTheme.visuals.sky);
-    }
-
-    if (typeof setEnvironmentTheme === 'function') {
-        setEnvironmentTheme(nextTheme.visuals.environment);
-    }
-
-    if (typeof setBoardTheme === 'function') {
-        setBoardTheme(nextTheme.visuals.environment.boardSpaceColor, nextTheme.visuals.environment.boardGridColor);
-    }
-
-    if (typeof setPlayerFallbackColors === 'function') {
-        setPlayerFallbackColors(nextTheme.visuals.playerFallbackColors);
-    }
+    setDebugStatsTheme(nextTheme.debugStatsTheme);
+    setSkyTheme(nextTheme.visuals.sky);
+    setEnvironmentTheme(nextTheme.visuals.environment);
+    setBoardTheme(nextTheme.visuals.environment.boardSpaceColor, nextTheme.visuals.environment.boardGridColor);
+    setPlayerFallbackColors(nextTheme.visuals.playerFallbackColors);
 
     return nextTheme;
 }
